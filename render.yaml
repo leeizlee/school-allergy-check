@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: school-allergy-admin
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: SESSION_COOKIE_SECURE
+        value: "1"
+      - key: SESSION_TIMEOUT_MINUTES
+        value: "60"
+      - key: FLASK_SECRET_KEY
+        sync: false
+      - key: KIOSK_SCAN_API_TOKEN
+        sync: false
+      - key: DEFAULT_STUDENT_PASSWORD
+        sync: false
+      - key: SERVICE_ACCOUNT_JSON_B64
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: MENU_SHEET_ID
+        sync: false
+      - key: STUDENT_SHEET_ID
+        sync: false
+      - key: LOGIN_SHEET_ID
+        sync: false
+      - key: LOG_SHEET_ID
+        sync: false
+      - key: PUBLIC_ADMIN_URL
+        sync: false
+      - key: RFID_DASHBOARD_URL
+        sync: false

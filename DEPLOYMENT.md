@@ -65,6 +65,20 @@ For the Google service account, use one of these:
 
 For Render, `render.yaml` marks secret values with `sync: false`, so Render asks for them in the dashboard during setup.
 
+You can generate a private `.env`-style file for Render from local secrets:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_render_env.ps1
+```
+
+The output is:
+
+```text
+deploy/render_env_private.env
+```
+
+This file contains real secrets. Do not upload it to GitHub.
+
 ## Encoding the Google service account JSON
 
 PowerShell:

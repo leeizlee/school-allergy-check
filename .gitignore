@@ -11,6 +11,8 @@ uploads/*
 !uploads/.gitkeep
 deploy/raspberry_pi/
 deploy/raspberry_pi_onefile/
+deploy/*_private.env
+deploy/render_env_private.env
 deploy/*.zip
 __pycache__/
 *.pyc

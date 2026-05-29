@@ -201,6 +201,15 @@ if (-not $kioskToken) {
     $kioskToken = Get-LocalSecretValue "KIOSK_SCAN_API_TOKEN"
 }
 
+$adminServerUrl = $env:ADMIN_SERVER_URL
+if (-not $adminServerUrl) {
+    $adminServerUrl = Get-LocalSecretValue "ADMIN_SERVER_URL"
+}
+if (-not $adminServerUrl) {
+    $adminServerUrl = Get-LocalSecretValue "PUBLIC_ADMIN_URL"
+}
+$adminServerUrl = "$adminServerUrl".Trim().TrimEnd("/")
+
 Set-Utf8NoBomFile -Path (Join-Path $bundleDir "kiosk_secrets.example.env") -Value @'
 # Optional after cloud deployment:
 # ADMIN_SERVER_URL=https://your-admin-server.example.com
@@ -208,7 +217,12 @@ KIOSK_SCAN_API_TOKEN=replace-with-the-same-token-as-admin-server
 '@
 
 if ($kioskToken) {
-    Set-Utf8NoBomFile -Path (Join-Path $bundleDir "kiosk_secrets.env") -Value ("KIOSK_SCAN_API_TOKEN=" + (ConvertTo-ShellSingleQuoted $kioskToken) + "`n")
+    $secretLines = @()
+    if ($adminServerUrl) {
+        $secretLines += "ADMIN_SERVER_URL=" + (ConvertTo-ShellSingleQuoted $adminServerUrl)
+    }
+    $secretLines += "KIOSK_SCAN_API_TOKEN=" + (ConvertTo-ShellSingleQuoted $kioskToken)
+    Set-Utf8NoBomFile -Path (Join-Path $bundleDir "kiosk_secrets.env") -Value (($secretLines -join "`n") + "`n")
 }
 
 if (Test-Path $zipPath) {

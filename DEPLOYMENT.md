@@ -103,6 +103,8 @@ The script reads `KIOSK_SCAN_API_TOKEN` from `config/local_secrets.bat` and writ
 deploy/raspberry_pi/kiosk_secrets.env
 ```
 
+If `ADMIN_SERVER_URL` or `PUBLIC_ADMIN_URL` is set locally, the script also writes that stable server URL into the kiosk secret file.
+
 That file and the generated zip are private deployment artifacts. Do not upload them to GitHub.
 
 ## After deployment

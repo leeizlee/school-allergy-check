@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ page_title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='admin/admin_v5.css') }}">
+</head>
+<body class="admin-v5 light-mode">
+  <div class="admin-shell">
+    <aside class="admin-sidebar" id="adminSidebar">
+      <a class="brand" href="{{ url_for('home') }}">
+        <span class="brand-mark">A</span>
+        <span>
+          <strong>AllergySafe</strong>
+          <small>Gentelella v5</small>
+        </span>
+      </a>
+
+      <nav class="side-nav" aria-label="관리자 메뉴">
+        <div class="nav-section">GENERAL</div>
+        <a class="nav-link {% if active_tab == 'admin_home' %}active{% endif %}" href="{{ url_for('home') }}"><span>H</span>관리자 홈</a>
+        <a class="nav-link {% if active_tab == 'student_manage' %}active{% endif %}" href="{{ url_for('student_manage_page') }}"><span>S</span>학생관리</a>
+        <a class="nav-link {% if active_tab == 'menu_manage' %}active{% endif %}" href="{{ url_for('menu_manage_page') }}"><span>M</span>급식관리</a>
+        <a class="nav-link {% if active_tab == 'lunch_log' %}active{% endif %}" href="{{ url_for('lunch_log_page') }}"><span>L</span>급식로그</a>
+        <div class="nav-section">AI</div>
+        <a class="nav-link {% if active_tab == 'meal_ai' %}active{% endif %}" href="{{ url_for('meal_upload_page') }}"><span>U</span>AI급식추가</a>
+        <a class="nav-link {% if active_tab == 'ai_tools' %}active{% endif %}" href="{{ url_for('ai_tools_page') }}"><span>A</span>AI안전도우미</a>
+        <div class="nav-section">SYSTEM</div>
+        <a class="nav-link {% if active_tab == 'trash' %}active{% endif %}" href="{{ url_for('trash_page') }}"><span>T</span>휴지통</a>
+        <a class="nav-link" href="{{ url_for('kiosk_page') }}" target="_blank"><span>K</span>키오스크 열기</a>
+        {% if rfid_dashboard_url %}
+        <a class="nav-link" href="{{ rfid_dashboard_url }}" target="_blank"><span>R</span>RFID 모니터</a>
+        {% endif %}
+      </nav>
+
+      <div class="sidebar-account">
+        <button type="button" class="avatar-button" onclick="openMyAccountModal()" title="내 계정">{{ (login_name or '관')[:1] }}</button>
+        <div>
+          <strong>{{ login_name or '관리자' }}</strong>
+          <small>{{ login_id or 'Admin' }}</small>
+        </div>
+        <a href="{{ url_for('logout') }}">로그아웃</a>
+      </div>
+    </aside>
+
+    <section class="admin-main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" class="icon-button" id="sidebarToggle" title="메뉴 접기">☰</button>
+          <span>Home</span>
+        </div>
+        <div class="topbar-actions">
+          <button type="button" class="soft-button" id="themeToggleBtn" onclick="toggleAdminTheme()">다크모드</button>
+          <button type="button" class="soft-button" onclick="openMyAccountModal()">관리자님</button>
+        </div>
+      </header>
+
+      <main class="page">
+        <div class="page-heading">
+          <div>
+            <div class="eyebrow">{% block eyebrow %}OVERVIEW{% endblock %}</div>
+            <h1>{{ title }}</h1>
+            <p>{{ subtitle }}</p>
+          </div>
+          <div class="page-actions">
+            {% block page_actions %}{% endblock %}
+          </div>
+        </div>
+        {% block content %}{% endblock %}
+      </main>
+    </section>
+  </div>
+
+  <script id="adminChartData" type="application/json">{{ chart_data|tojson }}</script>
+  <script src="{{ url_for('static', filename='admin/admin_v5.js') }}"></script>
+  {{ legacy_admin_tail|safe }}
+</body>
+</html>

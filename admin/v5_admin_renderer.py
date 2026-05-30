@@ -7,7 +7,6 @@ from markupsafe import Markup
 
 from admin import app_admin as legacy
 
-
 _TEMPLATE_BY_TAB = {
     "admin_home": "admin/home.html",
     "student_manage": "admin/student_manage.html",
@@ -17,7 +16,6 @@ _TEMPLATE_BY_TAB = {
     "ai_tools": "admin/ai_tools.html",
     "trash": "admin/trash.html",
 }
-
 
 @lru_cache(maxsize=1)
 def _legacy_admin_tail():
@@ -29,319 +27,261 @@ def _legacy_admin_tail():
         return ""
     return source[start:end].replace("let isDarkMode = true;", "let isDarkMode = false;", 1)
 
-
-def _available_classes(available_class_keys):
-    classes = [{"key": "all", "label": "\uc804\uccb4"}]
-    for key in available_class_keys:
+def _available_classes(keys):
+    items = [{"key": "all", "label": "전체"}]
+    for key in keys:
         if key == "unknown":
             continue
         parts = key.split("-")
-        if len(parts) != 2:
-            continue
-        try:
-            classes.append({"key": key, "label": f"{parts[0]}\ud559\ub144 {int(parts[1])}\ubc18"})
-        except ValueError:
-            classes.append({"key": key, "label": key})
-    return classes
-
+        if len(parts) == 2:
+            try:
+                items.append({"key": key, "label": f"{parts[0]}학년 {int(parts[1])}반"})
+            except ValueError:
+                items.append({"key": key, "label": key})
+    return items
 
 def _compact_date(value):
     return legacy.compact_date_value(value)
 
-
 def _date_label(value):
     text = _compact_date(value)
-    if len(text) == 8:
-        return f"{text[:4]}-{text[4:6]}-{text[6:8]}"
-    return text or "-"
+    return f"{text[:4]}-{text[4:6]}-{text[6:8]}" if len(text) == 8 else (text or "-")
 
+def _pct(part, total):
+    return round((part / total) * 100, 1) if total else 0
+
+def _codes(row):
+    return sorted(legacy.parse_codes(row.get("allergy_codes")))
+
+def _code_label(code):
+    return f"{code}. {legacy.ALLERGY_MAP.get(code, f'알수없음({code})')}"
 
 def _result_bucket(row):
     result = legacy.safe_str(row.get("result")).strip().lower()
     hit_names = legacy.safe_str(row.get("hit_names")).strip()
     hit_codes = legacy.safe_str(row.get("hit_codes")).strip()
-    if "ok" in result or result in {"\ud1b5\uacfc", "\uc548\uc804"}:
+    if "ok" in result or result in {"통과", "안전"}:
         return "safe"
-    if "\uacbd\uace0" in result or "\uc704\ud5d8" in result or hit_names or hit_codes:
+    if "경고" in result or "위험" in result or hit_names or hit_codes:
         return "danger"
-    if "\ubbf8\ub4f1\ub85d" in result:
+    if "미등록" in result:
         return "unknown"
-    if "\uc624\ub958" in result:
+    if "오류" in result:
         return "error"
     return "notice"
 
-
 def _scan_hour(row):
-    scanned_at = legacy.safe_str(row.get("scanned_at")).strip()
+    text = legacy.safe_str(row.get("scanned_at")).strip()
     for fmt in ("%Y-%m-%d %H:%M:%S", "%Y.%m.%d %H:%M:%S", "%Y/%m/%d %H:%M:%S"):
         try:
-            return datetime.strptime(scanned_at, fmt).hour
+            return datetime.strptime(text, fmt).hour
         except ValueError:
             pass
-    if len(scanned_at) >= 13 and scanned_at[11:13].isdigit():
-        return int(scanned_at[11:13])
-    if len(scanned_at) >= 10 and scanned_at[8:10].isdigit():
-        return int(scanned_at[8:10])
+    if len(text) >= 13 and text[11:13].isdigit():
+        return int(text[11:13])
+    if len(text) >= 10 and text[8:10].isdigit():
+        return int(text[8:10])
     return None
 
+def _week_keys(today):
+    base = datetime.strptime(today, "%Y%m%d") if len(today) == 8 else datetime.now()
+    return [(base - timedelta(days=i)).strftime("%Y%m%d") for i in range(6, -1, -1)]
 
-def _dashboard_data(student_rows, menu_rows, lunch_log_rows, selected_class, today_sheet):
-    total_students = len(student_rows)
-    allergy_students = sum(1 for row in student_rows if legacy.parse_codes(row.get("allergy_codes")))
-    rfid_students = sum(1 for row in student_rows if legacy.safe_str(row.get("rfid_id")).strip())
-    no_rfid_students = total_students - rfid_students
-
-    today_menus = [row for row in menu_rows if _compact_date(row.get("date")) == today_sheet]
-    today_logs = [row for row in lunch_log_rows if row.get("scan_date") == today_sheet]
-    if selected_class != "all":
-        today_logs = [row for row in today_logs if row.get("class_key") == selected_class]
-
-    buckets = Counter(_result_bucket(row) for row in today_logs)
-    risk_menus = []
-    for row in today_menus:
-        if legacy.parse_codes(row.get("allergy_codes")):
-            risk_menus.append(row)
-
+def _student_insights(rows):
+    total = len(rows)
+    allergy = sum(1 for row in rows if _codes(row))
+    rfid = sum(1 for row in rows if legacy.safe_str(row.get("rfid_id")).strip())
+    class_counts = Counter()
+    allergy_counts = Counter()
+    for row in rows:
+        class_counts[row.get("class_label") or f"{row.get('grade') or '-'}학년 {row.get('class_no') or '-'}반"] += 1
+        for code in _codes(row):
+            allergy_counts[_code_label(code)] += 1
     return {
-        "stats": {
-            "total_students": total_students,
-            "allergy_students": allergy_students,
-            "rfid_students": rfid_students,
-            "no_rfid_students": no_rfid_students,
-            "today_scan_count": len(today_logs),
-            "today_safe_count": buckets.get("safe", 0),
-            "today_danger_count": buckets.get("danger", 0),
-            "today_unknown_count": buckets.get("unknown", 0),
-        },
-        "today_menus": today_menus,
-        "risk_menus": risk_menus,
-        "recent_logs": today_logs[:8] if today_logs else lunch_log_rows[:8],
+        "rfid_rate": _pct(rfid, total),
+        "allergy_rate": _pct(allergy, total),
+        "class_counts": class_counts.most_common(12),
+        "allergy_counts": allergy_counts.most_common(12),
     }
 
+def _menu_insights(rows, today):
+    date_counts = Counter()
+    allergy_counts = Counter()
+    week_risk = Counter()
+    today_dt = datetime.strptime(today, "%Y%m%d") if len(today) == 8 else datetime.now()
+    week_start = today_dt - timedelta(days=6)
+    today_count = risk_count = missing_codes = week_count = 0
+    for row in rows:
+        date_key = _compact_date(row.get("date"))
+        codes = _codes(row)
+        if date_key:
+            date_counts[_date_label(date_key)] += 1
+        if date_key == today:
+            today_count += 1
+        if codes:
+            risk_count += 1
+            for code in codes:
+                allergy_counts[_code_label(code)] += 1
+        else:
+            missing_codes += 1
+        if len(date_key) == 8:
+            try:
+                dt = datetime.strptime(date_key, "%Y%m%d")
+                if week_start <= dt <= today_dt:
+                    week_count += 1
+                    week_risk[dt.strftime("%m/%d")] += 1 if codes else 0
+            except ValueError:
+                pass
+    labels = [(today_dt - timedelta(days=i)).strftime("%m/%d") for i in range(6, -1, -1)]
+    return {
+        "today_count": today_count,
+        "week_count": week_count,
+        "risk_count": risk_count,
+        "missing_codes": missing_codes,
+        "date_counts": date_counts.most_common(14),
+        "allergy_counts": allergy_counts.most_common(12),
+        "week_labels": labels,
+        "week_risk_values": [week_risk.get(label, 0) for label in labels],
+    }
 
-def _chart_data(student_rows, lunch_log_rows, today_sheet):
-    today_rows = [row for row in lunch_log_rows if row.get("scan_date") == today_sheet]
+def _lunch_insights(rows, today):
+    today_rows = [row for row in rows if row.get("scan_date") == today]
+    buckets = Counter(_result_bucket(row) for row in today_rows)
+    allergy_hits = Counter()
+    danger_rows = []
+    unknown_rows = []
+    risky_students = set()
+    for row in today_rows:
+        bucket = _result_bucket(row)
+        if bucket == "danger":
+            danger_rows.append(row)
+            risky_students.add(row.get("student_number") or row.get("rfid_id") or row.get("name"))
+        if bucket == "unknown":
+            unknown_rows.append(row)
+        for code in legacy.parse_codes(row.get("hit_codes")):
+            allergy_hits[_code_label(code)] += 1
+    scan_times = [legacy.safe_str(row.get("scanned_at")).strip() for row in today_rows if row.get("scanned_at")]
+    return {
+        "unknown_count": buckets.get("unknown", 0),
+        "error_count": buckets.get("error", 0) + buckets.get("notice", 0),
+        "recent_scan_time": max(scan_times) if scan_times else "-",
+        "danger_rows": danger_rows[:6],
+        "unknown_rows": unknown_rows[:6],
+        "risky_student_count": len([x for x in risky_students if x]),
+        "allergy_hits": allergy_hits.most_common(8),
+    }
+
+def _meal_preview_summary(preview):
+    rows = (preview or {}).get("rows") or []
+    dates = {legacy.safe_str(row.get("date")).strip() for row in rows if row.get("date")}
+    review = sum(1 for row in rows if row.get("needs_review"))
+    low_conf = sum(1 for row in rows if float(row.get("confidence") or 0) < 0.75)
+    return {"date_count": len(dates), "menu_count": len(rows), "review_count": review, "low_confidence_count": low_conf}
+
+def _dashboard_data(student_rows, menu_rows, lunch_rows, selected_class, today):
+    total = len(student_rows)
+    allergy = sum(1 for row in student_rows if _codes(row))
+    rfid = sum(1 for row in student_rows if legacy.safe_str(row.get("rfid_id")).strip())
+    today_menus = [row for row in menu_rows if _compact_date(row.get("date")) == today]
+    risk_menus = [row for row in today_menus if _codes(row)]
+    today_logs = [row for row in lunch_rows if row.get("scan_date") == today]
+    if selected_class != "all":
+        today_logs = [row for row in today_logs if row.get("class_key") == selected_class]
+    buckets = Counter(_result_bucket(row) for row in today_logs)
+    return {
+        "stats": {"total_students": total, "allergy_students": allergy, "rfid_students": rfid, "no_rfid_students": total - rfid, "today_menu_count": len(today_menus), "today_risk_menu_count": len(risk_menus), "today_scan_count": len(today_logs), "today_safe_count": buckets.get("safe", 0), "today_danger_count": buckets.get("danger", 0), "today_unknown_count": buckets.get("unknown", 0), "today_error_count": buckets.get("error", 0) + buckets.get("notice", 0), "rfid_rate": _pct(rfid, total), "allergy_rate": _pct(allergy, total)},
+        "today_menus": today_menus,
+        "risk_menus": risk_menus,
+        "recent_logs": today_logs[:8] if today_logs else lunch_rows[:8],
+        "system_status": [{"label": "서버", "value": "정상", "kind": "safe"}, {"label": "데이터 연결", "value": "준비됨", "kind": "info"}, {"label": "AI 기능", "value": "대기", "kind": "ai"}, {"label": "최근 업데이트", "value": datetime.now().strftime("%m/%d %H:%M"), "kind": "muted"}],
+    }
+
+def _chart_data(student_rows, menu_rows, lunch_rows, today):
+    today_rows = [row for row in lunch_rows if row.get("scan_date") == today]
     hour_counts = [0] * 24
+    danger_hour_counts = [0] * 24
     for row in today_rows:
         hour = _scan_hour(row)
         if hour is not None and 0 <= hour <= 23:
             hour_counts[hour] += 1
-
-    result_counts = Counter(_result_bucket(row) for row in today_rows)
-    today_dt = datetime.strptime(today_sheet, "%Y%m%d") if len(today_sheet) == 8 else datetime.now()
-    trend_labels = []
-    trend_values = []
-    by_day = defaultdict(int)
-    for row in lunch_log_rows:
-        if _result_bucket(row) == "danger" and row.get("scan_date"):
-            by_day[row.get("scan_date")] += 1
-    for offset in range(6, -1, -1):
-        day = today_dt - timedelta(days=offset)
-        key = day.strftime("%Y%m%d")
-        trend_labels.append(day.strftime("%m/%d"))
-        trend_values.append(by_day.get(key, 0))
-
-    allergy_count = sum(1 for row in student_rows if legacy.parse_codes(row.get("allergy_codes")))
-    rfid_count = sum(1 for row in student_rows if legacy.safe_str(row.get("rfid_id")).strip())
+            if _result_bucket(row) == "danger":
+                danger_hour_counts[hour] += 1
+    buckets = Counter(_result_bucket(row) for row in today_rows)
+    week_keys = _week_keys(today)
+    labels = [_date_label(key)[5:] for key in week_keys]
+    danger_by_day = defaultdict(int)
+    scan_by_day = defaultdict(int)
+    for row in lunch_rows:
+        if row.get("scan_date"):
+            scan_by_day[row.get("scan_date")] += 1
+        if row.get("scan_date") and _result_bucket(row) == "danger":
+            danger_by_day[row.get("scan_date")] += 1
+    allergy = sum(1 for row in student_rows if _codes(row))
+    rfid = sum(1 for row in student_rows if legacy.safe_str(row.get("rfid_id")).strip())
+    student = _student_insights(student_rows)
+    menu = _menu_insights(menu_rows, today)
+    lunch = _lunch_insights(lunch_rows, today)
     return {
-        "hourly": {
-            "labels": [f"{hour:02d}" for hour in range(24)],
-            "values": hour_counts,
-        },
-        "results": {
-            "labels": ["\uc548\uc804", "\uc704\ud5d8", "\ubbf8\ub4f1\ub85d", "\uc624\ub958/\uc8fc\uc758"],
-            "values": [
-                result_counts.get("safe", 0),
-                result_counts.get("danger", 0),
-                result_counts.get("unknown", 0),
-                result_counts.get("error", 0) + result_counts.get("notice", 0),
-            ],
-            "colors": ["#47b881", "#e55353", "#f0ad4e", "#6c7ae0"],
-        },
-        "danger_trend": {
-            "labels": trend_labels,
-            "values": trend_values,
-        },
-        "student_mix": {
-            "labels": ["\uc54c\ub808\ub974\uae30", "\uc77c\ubc18"],
-            "values": [allergy_count, max(len(student_rows) - allergy_count, 0)],
-            "colors": ["#e55353", "#47b881"],
-        },
-        "rfid_mix": {
-            "labels": ["RFID \ub4f1\ub85d", "RFID \ubbf8\ub4f1\ub85d"],
-            "values": [rfid_count, max(len(student_rows) - rfid_count, 0)],
-            "colors": ["#5b8def", "#f0ad4e"],
-        },
+        "hourly": {"labels": [f"{h:02d}" for h in range(24)], "values": hour_counts},
+        "danger_hourly": {"labels": [f"{h:02d}" for h in range(24)], "values": danger_hour_counts},
+        "weekly_scans": {"labels": labels, "values": [scan_by_day.get(key, 0) for key in week_keys]},
+        "results": {"labels": ["안전", "위험", "미등록", "오류/주의"], "values": [buckets.get("safe", 0), buckets.get("danger", 0), buckets.get("unknown", 0), buckets.get("error", 0) + buckets.get("notice", 0)], "colors": ["#47b881", "#e55353", "#f0ad4e", "#6c7ae0"]},
+        "danger_trend": {"labels": labels, "values": [danger_by_day.get(key, 0) for key in week_keys]},
+        "student_mix": {"labels": ["알레르기", "일반"], "values": [allergy, max(len(student_rows) - allergy, 0)], "colors": ["#e55353", "#47b881"]},
+        "rfid_mix": {"labels": ["RFID 등록", "RFID 미등록"], "values": [rfid, max(len(student_rows) - rfid, 0)], "colors": ["#5b8def", "#f0ad4e"]},
+        "class_counts": {"labels": [label for label, _ in student["class_counts"]], "values": [value for _, value in student["class_counts"]]},
+        "student_allergy_top": {"labels": [label for label, _ in student["allergy_counts"]], "values": [value for _, value in student["allergy_counts"]]},
+        "menu_date_counts": {"labels": [label for label, _ in menu["date_counts"]], "values": [value for _, value in menu["date_counts"]]},
+        "menu_allergy_top": {"labels": [label for label, _ in menu["allergy_counts"]], "values": [value for _, value in menu["allergy_counts"]]},
+        "menu_week_risk": {"labels": menu["week_labels"], "values": menu["week_risk_values"]},
+        "menu_risk_mix": {"labels": ["위험 가능", "코드 없음"], "values": [menu["risk_count"], menu["missing_codes"]], "colors": ["#e55353", "#47b881"]},
+        "log_allergy_hits": {"labels": [label for label, _ in lunch["allergy_hits"]], "values": [value for _, value in lunch["allergy_hits"]]},
     }
 
-
-def _menu_timeline(menu_groups, today_sheet):
-    today = []
-    upcoming = []
-    past = []
-    for group in menu_groups:
+def _menu_timeline(groups, today):
+    current, upcoming, past = [], [], []
+    for group in groups:
         date_key = _compact_date(group.get("date"))
-        if date_key == today_sheet:
-            today.append(group)
-        elif date_key > today_sheet:
+        if date_key == today:
+            current.append(group)
+        elif date_key > today:
             upcoming.append(group)
         else:
             past.append(group)
-    return {
-        "today": today,
-        "upcoming": sorted(upcoming, key=lambda item: _compact_date(item.get("date")))[:12],
-        "past": past[:12],
-    }
+    return {"today": current, "upcoming": sorted(upcoming, key=lambda item: _compact_date(item.get("date")))[:12], "past": past[:12]}
 
+def _trash_summary(rows):
+    students = sum(1 for row in rows if row.get("kind") == "학생")
+    menus = sum(1 for row in rows if row.get("kind") == "급식")
+    return {"total": len(rows), "students": students, "menus": menus}
 
-def _trash_summary(trash_rows):
-    students = sum(1 for row in trash_rows if row.get("kind") == "\ud559\uc0dd")
-    menus = sum(1 for row in trash_rows if row.get("kind") == "\uae09\uc2dd")
-    return {"total": len(trash_rows), "students": students, "menus": menus}
-
-
-def _build_context(
-    title,
-    subtitle,
-    active_tab,
-    meal_mode="upload",
-    meal_preview=None,
-    meal_ocr_text="",
-    meal_error="",
-    meal_created_by=None,
-):
+def _build_context(title, subtitle, active_tab, meal_mode="upload", meal_preview=None, meal_ocr_text="", meal_error="", meal_created_by=None):
     selected_class = legacy.safe_str(request.args.get("class_key", "all")).strip() or "all"
     selected_date = legacy.safe_str(request.args.get("date", "")).replace("-", "").strip()
-
     student_rows = legacy.get_all_student_rows()
     menu_rows = legacy.get_all_menu_rows()
     menu_groups = legacy.get_menu_groups()
-    lunch_log_rows = legacy.get_all_lunch_log_rows()
-    available_class_keys = legacy.get_available_class_keys(
-        student_rows=student_rows,
-        lunch_log_rows=lunch_log_rows,
-    )
-    available_classes = _available_classes(available_class_keys)
-
+    lunch_rows = legacy.get_all_lunch_log_rows()
+    class_keys = legacy.get_available_class_keys(student_rows=student_rows, lunch_log_rows=lunch_rows)
+    filtered_students = [row for row in student_rows if selected_class == "all" or row.get("class_key") == selected_class]
+    student_summary = {"total": len(filtered_students), "allergy": sum(1 for row in filtered_students if _codes(row)), "rfid": sum(1 for row in filtered_students if legacy.safe_str(row.get("rfid_id")).strip()), "no_rfid": sum(1 for row in filtered_students if not legacy.safe_str(row.get("rfid_id")).strip())}
+    filtered_lunch = [row for row in lunch_rows if (not selected_date or row.get("scan_date") == selected_date)]
     if selected_class != "all":
-        filtered_student_rows = [x for x in student_rows if x.get("class_key") == selected_class]
-    else:
-        filtered_student_rows = list(student_rows)
-
-    student_summary = {
-        "total": len(filtered_student_rows),
-        "allergy": sum(1 for row in filtered_student_rows if legacy.parse_codes(row.get("allergy_codes"))),
-        "rfid": sum(1 for row in filtered_student_rows if legacy.safe_str(row.get("rfid_id")).strip()),
-        "no_rfid": sum(1 for row in filtered_student_rows if not legacy.safe_str(row.get("rfid_id")).strip()),
-    }
-
-    if selected_date:
-        filtered_lunch_rows = [x for x in lunch_log_rows if x.get("scan_date") == selected_date]
-    else:
-        filtered_lunch_rows = list(lunch_log_rows)
-    if selected_class != "all":
-        filtered_lunch_rows = [x for x in filtered_lunch_rows if x.get("class_key") == selected_class]
-
-    lunch_log_date_options = sorted(
-        list({x["scan_date"] for x in lunch_log_rows if x.get("scan_date")}),
-        reverse=True,
-    )
-    active_lunch_date = selected_date or legacy.today_sheet_str()
-    today_rows = [x for x in lunch_log_rows if x.get("scan_date") == legacy.today_sheet_str()]
-    date_rows_for_attendance = [x for x in lunch_log_rows if x.get("scan_date") == active_lunch_date]
-    today_stats = legacy.build_lunch_log_stats(today_rows, all_students=student_rows)
-    attendance_summary = legacy.build_not_eaten_students(
-        student_rows,
-        date_rows_for_attendance,
-        selected_class=selected_class,
-    )
-
-    selected_date_input = ""
-    if selected_date and len(selected_date) == 8:
-        selected_date_input = f"{selected_date[:4]}-{selected_date[4:6]}-{selected_date[6:8]}"
-    elif not selected_date and len(active_lunch_date) == 8:
-        selected_date_input = f"{active_lunch_date[:4]}-{active_lunch_date[4:6]}-{active_lunch_date[6:8]}"
-
-    today_sheet = legacy.today_sheet_str()
-    ai_date_options = sorted(
-        {
-            _compact_date(row.get("date"))
-            for row in menu_rows
-            if _compact_date(row.get("date"))
-        },
-        reverse=True,
-    )
-    if today_sheet not in ai_date_options:
-        ai_date_options.insert(0, today_sheet)
-
+        filtered_lunch = [row for row in filtered_lunch if row.get("class_key") == selected_class]
+    today = legacy.today_sheet_str()
+    active_lunch_date = selected_date or today
+    today_rows = [row for row in lunch_rows if row.get("scan_date") == today]
+    attendance_rows = [row for row in lunch_rows if row.get("scan_date") == active_lunch_date]
+    selected_date_input = f"{active_lunch_date[:4]}-{active_lunch_date[4:6]}-{active_lunch_date[6:8]}" if len(active_lunch_date) == 8 else ""
+    ai_dates = sorted({_compact_date(row.get("date")) for row in menu_rows if _compact_date(row.get("date"))}, reverse=True)
+    if today not in ai_dates:
+        ai_dates.insert(0, today)
     trash_rows = legacy.get_trash_rows()
+    preview = meal_preview or {"rows": [], "warnings": [], "warning_count": 0}
+    today_dt = datetime.strptime(today, "%Y%m%d") if len(today) == 8 else datetime.now()
+    return {"page_title": title, "title": title, "subtitle": subtitle, "active_tab": active_tab, "menu_rows": menu_rows, "menu_groups": menu_groups, "menu_timeline": _menu_timeline(menu_groups, today), "student_rows": filtered_students, "all_student_rows": student_rows, "student_summary": student_summary, "student_class_groups": legacy.build_class_groups(filtered_students), "lunch_log_rows": filtered_lunch, "lunch_log_class_groups": legacy.build_class_groups(filtered_lunch), "trash_rows": trash_rows, "trash_summary": _trash_summary(trash_rows), "allergy_map": legacy.ALLERGY_MAP, "default_admin_name": legacy.DEFAULT_ADMIN_NAME, "default_student_password": legacy.DEFAULT_STUDENT_PASSWORD, "rfid_dashboard_url": legacy.RFID_DASHBOARD_URL, "logged_in": legacy.is_logged_in(), "login_name": session.get("login_name", "관리자"), "login_id": session.get("login_id", ""), "available_classes": _available_classes(class_keys), "selected_class": selected_class, "selected_date": selected_date, "selected_date_input": selected_date_input, "lunch_log_date_options": sorted(list({row["scan_date"] for row in lunch_rows if row.get("scan_date")}), reverse=True), "today_stats": legacy.build_lunch_log_stats(today_rows, all_students=student_rows), "attendance_summary": legacy.build_not_eaten_students(student_rows, attendance_rows, selected_class=selected_class), "active_lunch_date": active_lunch_date, "today_sheet": today, "today_label": _date_label(today), "today_weekday": ["월", "화", "수", "목", "금", "토", "일"][today_dt.weekday()], "ai_date_options": ai_dates[:80], "meal_mode": meal_mode, "meal_preview": preview, "meal_preview_summary": _meal_preview_summary(preview), "meal_ocr_text": meal_ocr_text, "meal_error": meal_error, "meal_created_by": meal_created_by or session.get("login_name", legacy.DEFAULT_ADMIN_NAME), "next_class_no": max([int(key.split("-")[1]) for key in class_keys if key != "unknown"] + [1]) + 1, "public_base_url": legacy.load_public_base_url(), "dashboard": _dashboard_data(student_rows, menu_rows, lunch_rows, selected_class, today), "student_insights": _student_insights(student_rows), "menu_insights": _menu_insights(menu_rows, today), "lunch_insights": _lunch_insights(lunch_rows, today), "chart_data": _chart_data(student_rows, menu_rows, lunch_rows, today)}
 
-    return {
-        "page_title": title,
-        "title": title,
-        "subtitle": subtitle,
-        "active_tab": active_tab,
-        "menu_rows": menu_rows,
-        "menu_groups": menu_groups,
-        "menu_timeline": _menu_timeline(menu_groups, today_sheet),
-        "student_rows": filtered_student_rows,
-        "all_student_rows": student_rows,
-        "student_summary": student_summary,
-        "student_class_groups": legacy.build_class_groups(filtered_student_rows),
-        "lunch_log_rows": filtered_lunch_rows,
-        "lunch_log_class_groups": legacy.build_class_groups(filtered_lunch_rows),
-        "trash_rows": trash_rows,
-        "trash_summary": _trash_summary(trash_rows),
-        "allergy_map": legacy.ALLERGY_MAP,
-        "default_admin_name": legacy.DEFAULT_ADMIN_NAME,
-        "default_student_password": legacy.DEFAULT_STUDENT_PASSWORD,
-        "rfid_dashboard_url": legacy.RFID_DASHBOARD_URL,
-        "logged_in": legacy.is_logged_in(),
-        "login_name": session.get("login_name", "\uad00\ub9ac\uc790"),
-        "login_id": session.get("login_id", ""),
-        "available_classes": available_classes,
-        "selected_class": selected_class,
-        "selected_date": selected_date,
-        "selected_date_input": selected_date_input,
-        "lunch_log_date_options": lunch_log_date_options,
-        "today_stats": today_stats,
-        "attendance_summary": attendance_summary,
-        "active_lunch_date": active_lunch_date,
-        "today_sheet": today_sheet,
-        "today_label": _date_label(today_sheet),
-        "ai_date_options": ai_date_options[:80],
-        "meal_mode": meal_mode,
-        "meal_preview": meal_preview or {"rows": [], "warnings": [], "warning_count": 0},
-        "meal_ocr_text": meal_ocr_text,
-        "meal_error": meal_error,
-        "meal_created_by": meal_created_by or session.get("login_name", legacy.DEFAULT_ADMIN_NAME),
-        "next_class_no": max([int(key.split("-")[1]) for key in available_class_keys if key != "unknown"] + [1]) + 1,
-        "public_base_url": legacy.load_public_base_url(),
-        "dashboard": _dashboard_data(student_rows, menu_rows, lunch_log_rows, selected_class, today_sheet),
-        "chart_data": _chart_data(student_rows, lunch_log_rows, today_sheet),
-    }
-
-
-def render_admin_page_v5(
-    title,
-    subtitle,
-    active_tab,
-    meal_mode="upload",
-    meal_preview=None,
-    meal_ocr_text="",
-    meal_error="",
-    meal_created_by=None,
-):
-    context = _build_context(
-        title=title,
-        subtitle=subtitle,
-        active_tab=active_tab,
-        meal_mode=meal_mode,
-        meal_preview=meal_preview,
-        meal_ocr_text=meal_ocr_text,
-        meal_error=meal_error,
-        meal_created_by=meal_created_by,
-    )
-    template_name = _TEMPLATE_BY_TAB.get(active_tab, "admin/home.html")
+def render_admin_page_v5(title, subtitle, active_tab, meal_mode="upload", meal_preview=None, meal_ocr_text="", meal_error="", meal_created_by=None):
+    context = _build_context(title, subtitle, active_tab, meal_mode, meal_preview, meal_ocr_text, meal_error, meal_created_by)
     context["legacy_admin_tail"] = Markup(render_template_string(_legacy_admin_tail(), **context))
-    return render_template(template_name, **context)
+    return render_template(_TEMPLATE_BY_TAB.get(active_tab, "admin/home.html"), **context)

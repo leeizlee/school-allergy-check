@@ -21,7 +21,10 @@ _UI_SKIN_ENDPOINTS = {
     "ai_tools_page",
     "trash_page",
 }
-_UI_SKIN_STYLESHEET = '<link rel="stylesheet" href="/static/admin_layout_v5.css">'
+_UI_SKIN_STYLESHEET = (
+    '<link rel="stylesheet" href="/static/admin_layout_v5.css">'
+    '<link rel="stylesheet" href="/static/admin_workspace_v5.css">'
+)
 _UI_SKIN_SCRIPT = '<script src="/static/admin_layout_v5.js" defer></script>'
 _ADMIN_SHELL_ENDPOINTS = {
     "student_manage_page",
@@ -71,6 +74,15 @@ def _rewrite_admin_shell(body):
     body = body.replace('<div class="topbar-right">', '<div class="gt-topbar-actions">', 1)
     body = body.replace('<main class="content">', '<main class="gt-content">', 1)
     body = body.replace('<section class="panel">', '<section class="gt-panel panel">', 1)
+    body = body.replace('<div class="panel-header">', '<div class="gt-workspace-header">', 1)
+    body = body.replace('<div class="panel-header-actions">', '<div class="gt-workspace-actions">', 1)
+    body = body.replace('<div class="card">', '<div class="gt-workspace-card">', 1)
+    body = body.replace('<div class="student-header-stats">', '<div class="gt-metric-grid student-header-stats">', 1)
+    body = body.replace('<div class="table-scroll-wrap">', '<div class="gt-table-card table-scroll-wrap">', 1)
+    body = body.replace('<div class="soft-panel">', '<div class="gt-dashboard-surface soft-panel">', 1)
+    body = body.replace('<div class="meal-ai-shell">', '<div class="gt-builder-surface meal-ai-shell">', 1)
+    body = body.replace('<div class="ai-safe-shell">', '<div class="gt-builder-surface ai-safe-shell">', 1)
+    body = body.replace('<div class="section-banner">', '<div class="gt-section-banner section-banner">', 1)
     body = body.replace("let isDarkMode = true;", "let isDarkMode = false;", 1)
     body = body.replace(
         'id="themeToggleBtn" onclick="toggleAdminTheme()">\ud654\uc774\ud2b8\ubaa8\ub4dc</button>',
@@ -112,7 +124,7 @@ def inject_admin_layout_assets(response):
     body = response.get_data(as_text=True)
     if request.endpoint in _ADMIN_SHELL_ENDPOINTS:
         body = _rewrite_admin_shell(body)
-    if "admin_layout_v5.css" not in body and "</head>" in body:
+    if "admin_workspace_v5.css" not in body and "</head>" in body:
         body = body.replace("</head>", f"  {_UI_SKIN_STYLESHEET}\n</head>", 1)
     if "admin_layout_v5.js" not in body and "</body>" in body:
         body = body.replace("</body>", f"  {_UI_SKIN_SCRIPT}\n</body>", 1)

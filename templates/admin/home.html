@@ -1,0 +1,54 @@
+{% extends "base_admin.html" %}
+{% block page_actions %}
+  <a class="btn btn-outline" href="{{ url_for('lunch_log_page') }}">로그 보기</a>
+  <a class="btn btn-primary" href="{{ url_for('meal_upload_page') }}">AI 급식 추가</a>
+{% endblock %}
+{% block content %}
+<section class="stat-grid six">
+  <article class="stat-card"><span>총 학생</span><strong>{{ dashboard.stats.total_students }}</strong><small>전체 재학생</small><div class="mini-bars mint"></div></article>
+  <article class="stat-card danger"><span>알레르기 학생</span><strong>{{ dashboard.stats.allergy_students }}</strong><small>대상자 관리 필요</small><div class="mini-bars red"></div></article>
+  <article class="stat-card info"><span>RFID 등록</span><strong>{{ dashboard.stats.rfid_students }}</strong><small>카드 연동 완료</small><div class="mini-bars blue"></div></article>
+  <article class="stat-card warn"><span>RFID 미등록</span><strong>{{ dashboard.stats.no_rfid_students }}</strong><small>추가 확인 필요</small><div class="mini-bars amber"></div></article>
+  <article class="stat-card"><span>오늘 스캔</span><strong>{{ dashboard.stats.today_scan_count }}</strong><small>급식 체크 로그</small><div class="mini-bars mint"></div></article>
+  <article class="stat-card danger"><span>오늘 위험</span><strong>{{ dashboard.stats.today_danger_count }}</strong><small>즉시 확인 항목</small><div class="mini-bars red"></div></article>
+</section>
+
+<section class="dashboard-grid">
+  <article class="panel panel-wide">
+    <div class="panel-title"><div><h2>오늘 급식 안전 현황</h2><p>{{ today_label }} 기준 시간대별 RFID 스캔</p></div><span class="badge info">{{ dashboard.stats.today_safe_count }} 안전</span></div>
+    <canvas class="admin-chart" data-chart="hourly" height="220"></canvas>
+  </article>
+  <article class="panel">
+    <div class="panel-title"><div><h2>판정 비율</h2><p>안전, 위험, 미등록, 오류</p></div></div>
+    <canvas class="admin-chart donut" data-chart="results" height="220"></canvas>
+  </article>
+</section>
+
+<section class="dashboard-grid">
+  <article class="panel">
+    <div class="panel-title"><div><h2>오늘의 급식</h2><p>등록된 메뉴와 알레르기 코드</p></div><a class="btn btn-light" href="{{ url_for('menu_manage_page') }}">관리</a></div>
+    <div class="item-list">
+      {% if dashboard.today_menus %}
+        {% for menu in dashboard.today_menus[:8] %}
+        <div class="list-row"><div><strong>{{ menu.menu_name or '-' }}</strong><small>{{ menu.allergy_names or '알레르기 코드 없음' }}</small></div>{% if menu.allergy_names and menu.allergy_names != '없음' %}<span class="badge danger">주의</span>{% else %}<span class="badge safe">안전</span>{% endif %}</div>
+        {% endfor %}
+      {% else %}<div class="empty-state">오늘 등록된 급식 메뉴가 없습니다.</div>{% endif %}
+    </div>
+  </article>
+  <article class="panel">
+    <div class="panel-title"><div><h2>최근 체크 로그</h2><p>가장 최근 급식 스캔 기록</p></div><a class="btn btn-light" href="{{ url_for('lunch_log_page') }}">전체</a></div>
+    <div class="activity-list">
+      {% if dashboard.recent_logs %}
+        {% for row in dashboard.recent_logs %}
+        <div class="activity-row"><span class="activity-dot {% if row.result == '경고' %}danger{% elif row.result == 'OK' %}safe{% else %}warn{% endif %}"></span><div><strong>{{ row.name or row.rfid_id or '미등록 RFID' }}</strong><small>{{ row.scanned_at or '-' }} · {{ row.result or '-' }}</small></div></div>
+        {% endfor %}
+      {% else %}<div class="empty-state">아직 표시할 로그가 없습니다.</div>{% endif %}
+    </div>
+  </article>
+</section>
+
+<section class="dashboard-grid">
+  <article class="panel panel-wide"><div class="panel-title"><div><h2>최근 7일 위험 감지 추이</h2><p>급식 위험 판정 건수</p></div></div><canvas class="admin-chart" data-chart="danger_trend" height="180"></canvas></article>
+  <article class="panel"><div class="panel-title"><div><h2>학생 안전 구성</h2><p>알레르기 보유 학생 비율</p></div></div><canvas class="admin-chart donut" data-chart="student_mix" height="180"></canvas></article>
+</section>
+{% endblock %}

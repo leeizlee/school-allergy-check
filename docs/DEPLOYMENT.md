@@ -4,13 +4,14 @@
 
 Commit the application source and templates:
 
-- `app_admin.py`
-- `app_kiosk.py`
+- `admin/`
+- `kiosk/`
 - `core/`
 - `services/`
 - `static/`
 - `data/`
 - `scripts/`
+- root compatibility launchers: `app_admin.py`, `app_kiosk.py`, `server_gui.py`
 - `requirements.txt`
 - `wsgi.py`
 - `Procfile`
@@ -91,13 +92,13 @@ Put the printed value into `SERVICE_ACCOUNT_JSON_B64`.
 
 ## Raspberry Pi kiosk bundle
 
-Create the Pi bundle locally:
+Build the private Raspberry Pi bundle locally:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_pi_bundle.ps1
 ```
 
-The script reads `KIOSK_SCAN_API_TOKEN` from `config/local_secrets.bat` and writes it to:
+The script reads `KIOSK_SCAN_API_TOKEN` from `config/local_secrets.bat` and writes a private kiosk secret file:
 
 ```text
 deploy/raspberry_pi/kiosk_secrets.env
@@ -109,8 +110,4 @@ That file and the generated zip are private deployment artifacts. Do not upload 
 
 ## After deployment
 
-1. Open `/health` and confirm it returns JSON.
-2. Open `/admin` and log in.
-3. Set the Raspberry Pi `ADMIN_SERVER_URL` or discovery URL to the new HTTPS server address.
-4. Scan one registered RFID and one unregistered/wrong RFID.
-5. Confirm the admin RFID check screen still receives unregistered scans.
+Update `latest-url.json` if the public admin URL changes.

@@ -1,4 +1,4 @@
-/* v5.3 common admin layout refresh inspired by Gentelella v4. */
+/* v5.3 common UI refresh inspired by Gentelella v4. */
 :root {
   --gt-accent: #1abb9c;
   --gt-accent-strong: #159a82;
@@ -10,23 +10,30 @@
   --gt-sidebar-muted: #8290a6;
   --gt-sidebar-hover: rgba(255, 255, 255, 0.07);
   --gt-sidebar-active: #253546;
+  --gt-page-bg: #f5f7fb;
+  --gt-text: #0f172a;
+  --gt-muted: #667085;
+  --gt-card: #ffffff;
+  --gt-border: #dfe5ec;
+  --gt-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+  --gt-shadow-strong: 0 24px 70px rgba(15, 23, 42, 0.14);
 }
 
 body.light-mode {
-  --bg: #f5f7fb;
+  --bg: var(--gt-page-bg);
   --topbar: #ffffff;
   --card: #ffffff;
   --card-2: #f8fafc;
-  --line: #dfe5ec;
+  --line: var(--gt-border);
   --line-soft: rgba(15, 23, 42, 0.07);
-  --text: #0f172a;
-  --muted: #667085;
+  --text: var(--gt-text);
+  --muted: var(--gt-muted);
   --hover: #f1f5f9;
   --active: #e8f7f3;
   --primary: var(--gt-accent);
   --toolbar-bg: #ffffff;
   --section-soft-bg: #f8fafc;
-  --card-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+  --card-shadow: var(--gt-shadow);
   --card-shadow-soft: 0 4px 14px rgba(15, 23, 42, 0.06);
 }
 
@@ -52,6 +59,7 @@ body {
   font-family: Inter, system-ui, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 
+/* Admin shell */
 .layout {
   grid-template-columns: 242px minmax(0, 1fr);
 }
@@ -124,7 +132,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 20;
-  box-shadow: var(--card-shadow-soft);
+  box-shadow: var(--card-shadow-soft, var(--gt-shadow));
 }
 
 .topbar-logo img {
@@ -136,7 +144,8 @@ body {
   font-weight: 800 !important;
 }
 
-.topbar-right {
+.topbar-right,
+.top-actions {
   flex-wrap: wrap;
   justify-content: flex-end;
 }
@@ -145,7 +154,9 @@ body {
 .primary-btn,
 .secondary-btn,
 .danger-btn,
-.close-btn {
+.close-btn,
+.btn,
+.login-btn {
   min-height: 32px;
   padding: 8px 12px !important;
   border-radius: 6px !important;
@@ -154,11 +165,14 @@ body {
 }
 
 .ghost-btn:hover,
-.secondary-btn:hover {
+.secondary-btn:hover,
+.btn:hover {
   border-color: var(--gt-accent) !important;
 }
 
 .primary-btn,
+.btn-primary,
+.login-btn,
 body.light-mode .modal-footer .primary-btn {
   background: var(--gt-accent) !important;
   color: #ffffff !important;
@@ -167,6 +181,8 @@ body.light-mode .modal-footer .primary-btn {
 }
 
 .primary-btn:hover,
+.btn-primary:hover,
+.login-btn:hover,
 body.light-mode .modal-footer .primary-btn:hover {
   background: var(--gt-accent-strong) !important;
   border-color: var(--gt-accent-strong) !important;
@@ -184,12 +200,13 @@ body.light-mode .modal-footer .primary-btn:hover {
 .toolbar-soft,
 .menu-edit-item {
   border-radius: var(--gt-radius) !important;
-  box-shadow: var(--card-shadow-soft);
+  box-shadow: var(--card-shadow-soft, var(--gt-shadow));
 }
 
-.card {
+.card,
+.login-card {
   border-radius: var(--gt-radius) !important;
-  box-shadow: var(--card-shadow) !important;
+  box-shadow: var(--card-shadow, var(--gt-shadow)) !important;
 }
 
 .menu-date-pill {
@@ -229,8 +246,193 @@ th {
   box-shadow: 0 0 0 3px var(--gt-accent-soft);
 }
 
+/* Login */
+.login-card {
+  position: relative;
+  max-width: 430px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: #1f2937 !important;
+  padding: 34px 30px !important;
+}
+
+.login-card::before {
+  content: "급식 알레르기 Admin";
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.login-card::after {
+  content: "A";
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: var(--gt-accent);
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.login-title {
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+}
+
+.login-sub,
+.helper-text {
+  color: #9aa9bd !important;
+}
+
+.error-box {
+  border-radius: var(--gt-radius) !important;
+}
+
+/* Student home */
+.page {
+  max-width: 1320px !important;
+  padding: 24px !important;
+}
+
+.page > .grid {
+  gap: 16px !important;
+}
+
+.page > .card,
+.page .grid > .card {
+  border-radius: var(--gt-radius) !important;
+  border: 1px solid var(--gt-border) !important;
+  box-shadow: var(--gt-shadow) !important;
+}
+
+.page .menu-item,
+.page .alert-item,
+.page .account-value,
+.page .tag-wrap {
+  border-radius: var(--gt-radius) !important;
+}
+
+.page .tag {
+  border-radius: 999px !important;
+  background: var(--gt-accent-soft) !important;
+  color: var(--gt-accent-strong) !important;
+  border: 1px solid rgba(26, 187, 156, 0.22);
+}
+
+.page .safe {
+  color: #16a34a !important;
+}
+
+.page .danger {
+  color: #dc2626 !important;
+}
+
+/* Kiosk display */
+body.waiting,
+body.detected,
+body.ok,
+body.notfound {
+  font-family: Inter, system-ui, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif !important;
+}
+
+body.waiting {
+  background: linear-gradient(135deg, #f5f7fb, #e7edf5) !important;
+}
+
+body.detected {
+  background: linear-gradient(135deg, #fff7ed, #ffe9d0) !important;
+}
+
+body.ok {
+  background: linear-gradient(135deg, #ecfdf5, #d9fbe8) !important;
+}
+
+body.notfound {
+  background: linear-gradient(135deg, #fff1f2, #ffe2e6) !important;
+}
+
+.wrap {
+  width: min(94vw, 920px) !important;
+}
+
+.admin-link {
+  border-radius: 6px !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: var(--gt-shadow) !important;
+}
+
+.waiting-card,
+.detected-card,
+.notfound-card {
+  border-width: 1px !important;
+  border-radius: 18px !important;
+  box-shadow: var(--gt-shadow-strong) !important;
+}
+
+.waiting-card {
+  border-color: #cbd5e1 !important;
+}
+
+.detected-card {
+  border-color: #fdba74 !important;
+}
+
+.notfound-card {
+  border-color: #fda4af !important;
+}
+
+.badge,
+.status,
+.code {
+  border-radius: 999px !important;
+}
+
+.rfid {
+  border-color: var(--gt-accent) !important;
+  background: radial-gradient(circle at 30% 30%, #ffffff, #d6fff6) !important;
+}
+
+.rfid::before,
+.rfid::after {
+  border-top-color: var(--gt-accent) !important;
+  border-right-color: var(--gt-accent) !important;
+}
+
+.meta {
+  gap: 12px !important;
+}
+
+.box,
+.warn {
+  border-radius: var(--gt-radius) !important;
+}
+
 @media (max-width: 1100px) {
   .topbar {
     height: auto !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: 16px !important;
+  }
+
+  .login-card {
+    margin: 18px !important;
+  }
+
+  .admin-link {
+    position: static !important;
+    margin-bottom: 14px;
   }
 }

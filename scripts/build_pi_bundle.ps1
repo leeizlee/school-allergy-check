@@ -70,8 +70,9 @@ if (Test-Path $oneFileDir) {
 
 New-Item -ItemType Directory -Force -Path $bundleDir, $runtimeDir, $oneFileDir | Out-Null
 
-Copy-Item -LiteralPath (Join-Path $repoRoot "app_kiosk.py") -Destination (Join-Path $bundleDir "app_kiosk.py") -Force
-Copy-Item -LiteralPath (Join-Path $repoRoot "app_kiosk.py") -Destination (Join-Path $oneFileDir "app_kiosk.py") -Force
+$kioskAppPath = Join-Path $repoRoot "kiosk\app_kiosk.py"
+Copy-Item -LiteralPath $kioskAppPath -Destination (Join-Path $bundleDir "app_kiosk.py") -Force
+Copy-Item -LiteralPath $kioskAppPath -Destination (Join-Path $oneFileDir "app_kiosk.py") -Force
 
 Set-Utf8NoBomFile -Path (Join-Path $bundleDir "requirements.txt") -Value @'
 requests

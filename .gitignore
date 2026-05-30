@@ -18,6 +18,15 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.tmp
+Thumbs.db
+.DS_Store
 *.pem
 *.key
 *.log

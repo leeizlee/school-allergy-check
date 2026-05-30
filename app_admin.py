@@ -21,10 +21,11 @@ _UI_SKIN_ENDPOINTS = {
     "trash_page",
 }
 _UI_SKIN_STYLESHEET = '<link rel="stylesheet" href="/static/admin_layout_v5.css">'
+_UI_SKIN_SCRIPT = '<script src="/static/admin_layout_v5.js" defer></script>'
 
 
 @app.after_request
-def inject_admin_layout_stylesheet(response):
+def inject_admin_layout_assets(response):
     content_type = response.headers.get("Content-Type", "")
     if not content_type.startswith("text/html"):
         return response
@@ -32,10 +33,12 @@ def inject_admin_layout_stylesheet(response):
         return response
 
     body = response.get_data(as_text=True)
-    if "admin_layout_v5.css" in body or "</head>" not in body:
-        return response
+    if "admin_layout_v5.css" not in body and "</head>" in body:
+        body = body.replace("</head>", f"  {_UI_SKIN_STYLESHEET}\n</head>", 1)
+    if "admin_layout_v5.js" not in body and "</body>" in body:
+        body = body.replace("</body>", f"  {_UI_SKIN_SCRIPT}\n</body>", 1)
 
-    response.set_data(body.replace("</head>", f"  {_UI_SKIN_STYLESHEET}\n</head>", 1))
+    response.set_data(body)
     return response
 
 

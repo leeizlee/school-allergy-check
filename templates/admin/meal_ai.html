@@ -11,7 +11,36 @@
   <section class="dashboard-grid"><article class="panel"><div class="panel-title"><div><h2>주의 항목</h2><p>사람 검토가 필요한 분석 결과</p></div></div><div class="item-list">{% if meal_preview.warnings %}{% for warning in meal_preview.warnings %}<div class="list-row"><div><strong>{{ warning.menu_name }}</strong><small>{{ warning.date }} · {{ warning.message }}</small></div><span class="badge warn">확인</span></div>{% endfor %}{% else %}<div class="empty-state">추가 경고가 없습니다.</div>{% endif %}</div></article><article class="panel panel-wide"><div class="panel-title"><div><h2>OCR 원문</h2><p>분석 근거 텍스트</p></div></div><textarea class="readonly-text" readonly>{{ meal_ocr_text }}</textarea></article></section>
 </form>
 {% else %}
-<form id="mealAnalyzeForm" method="post" action="{{ url_for('meal_analyze_page') }}" enctype="multipart/form-data"><section class="dashboard-grid upload-layout"><article class="panel upload-panel"><div class="panel-title"><div><h2>원본 파일 업로드</h2><p>이미지, 엑셀, CSV 급식표를 분석합니다.</p></div></div><div class="alert-panel warn" style="margin:16px;"><span class="alert-icon">AI</span><div><strong>AI 분석 결과는 저장 전 검토가 필요합니다.</strong><p>날짜, 메뉴명, 알레르기 번호를 확인한 뒤 Google Sheets에 저장하세요.</p></div></div><label class="dropzone"><input id="mealFileInput" type="file" name="meal_file" accept="image/*,.xlsx,.csv,.tsv" required><strong>급식표 파일 선택</strong><small>PNG, JPG, WEBP, BMP, XLSX, CSV, TSV</small><span id="mealFileName" class="badge muted">선택된 파일 없음</span></label><label class="field-label">등록자 이름</label><input type="text" name="created_by" value="{{ meal_created_by }}" required><label class="field-label">AI 보조 메모</label><textarea name="ocr_hint" rows="5" placeholder="예: 5월 중식표야. 날짜는 표 상단 월/일을 기준으로 잡아줘."></textarea><button class="btn btn-primary wide-button" type="submit">분석 시작</button></article><article class="panel panel-wide"><div class="panel-title"><div><h2>분석 흐름</h2><p>저장 전 검토를 전제로 한 안전한 급식 데이터 입력</p></div></div><div class="workflow-list"><div><span>1</span><strong>파일 읽기</strong><small>OCR 또는 스프레드시트 파싱</small></div><div><span>2</span><strong>메뉴 분리</strong><small>날짜별 메뉴 행 생성</small></div><div><span>3</span><strong>알레르기 코드 점검</strong><small>AI 사전 기준 코드 추론</small></div><div><span>4</span><strong>관리자 검토</strong><small>수정 후 Google Sheets 저장</small></div></div></article></section></form>
+<form id="mealAnalyzeForm" method="post" action="{{ url_for('meal_analyze_page') }}" enctype="multipart/form-data" data-async-action="{{ url_for('api_meal_analyze_async') }}"><section class="dashboard-grid upload-layout"><article class="panel upload-panel"><div class="panel-title"><div><h2>원본 파일 업로드</h2><p>이미지, 엑셀, CSV 급식표를 분석합니다.</p></div></div><div class="alert-panel warn" style="margin:16px;"><span class="alert-icon">AI</span><div><strong>AI 분석 결과는 저장 전 검토가 필요합니다.</strong><p>분석 명령을 보낸 뒤에도 다른 화면을 사용할 수 있고, 완료되면 New 알림이 표시됩니다.</p></div></div><div id="mealAsyncStatus" class="alert-panel info hidden" style="margin:16px;"><span class="alert-icon">AI</span><div><strong>백그라운드 분석 실행 중</strong><p id="mealAsyncStatusText">분석 작업을 준비하고 있어.</p></div></div><label class="dropzone"><input id="mealFileInput" type="file" name="meal_file" accept="image/*,.xlsx,.csv,.tsv" required><strong>급식표 파일 선택</strong><small>PNG, JPG, WEBP, BMP, XLSX, CSV, TSV</small><span id="mealFileName" class="badge muted">선택된 파일 없음</span></label><label class="field-label">등록자 이름</label><input type="text" name="created_by" value="{{ meal_created_by }}" required><label class="field-label">AI 보조 메모</label><textarea name="ocr_hint" rows="5" placeholder="예: 5월 중식표야. 날짜는 표 상단 월/일을 기준으로 잡아줘."></textarea><button class="btn btn-primary wide-button" type="submit">분석 시작</button></article><article class="panel panel-wide"><div class="panel-title"><div><h2>분석 흐름</h2><p>저장 전 검토를 전제로 한 안전한 급식 데이터 입력</p></div></div><div class="workflow-list"><div><span>1</span><strong>파일 읽기</strong><small>백그라운드 작업 생성</small></div><div><span>2</span><strong>메뉴 분리</strong><small>다른 기능 사용 가능</small></div><div><span>3</span><strong>알레르기 코드 점검</strong><small>완료 시 New 알림 표시</small></div><div><span>4</span><strong>관리자 검토</strong><small>알림에서 결과 열기</small></div></div></article></section></form>
 {% endif %}
 <div id="mealAnalysisOverlay" class="meal-analysis-overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="mealAnalysisTitle"><div id="mealAnalysisDialog" class="meal-analysis-dialog"><div class="meal-analysis-spinner" aria-hidden="true"></div><div id="mealAnalysisTitle" class="meal-analysis-title">분석중입니다</div><div id="mealAnalysisMessage" class="meal-analysis-message">급식표를 읽고 AI가 메뉴와 알레르기 번호를 정리하고 있습니다.</div><button id="mealAnalysisCloseBtn" class="btn btn-light meal-analysis-close hidden" type="button" onclick="hideMealAnalysisOverlay()">확인</button></div></div>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("mealAnalyzeForm");
+    if (!form || !form.dataset.asyncAction) return;
+    const status = document.getElementById("mealAsyncStatus");
+    const statusText = document.getElementById("mealAsyncStatusText");
+    const submitButton = form.querySelector('[type="submit"]');
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (submitButton) submitButton.disabled = true;
+      if (status) status.classList.remove("hidden");
+      if (statusText) statusText.textContent = "분석 작업을 서버에 등록하고 있어. 이 화면을 벗어나도 계속 확인할게.";
+      try {
+        const res = await fetch(form.dataset.asyncAction, { method: "POST", body: new FormData(form) });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || "AI 분석 작업을 시작하지 못했어.");
+        const jobs = JSON.parse(localStorage.getItem("allergySafeAiMealJobs") || "[]");
+        jobs.unshift({ job_id: data.job_id, status_url: data.status_url, started_at: Date.now() });
+        localStorage.setItem("allergySafeAiMealJobs", JSON.stringify(jobs.slice(0, 8)));
+        if (statusText) statusText.textContent = "분석 작업이 시작됐어. 다른 기능을 사용해도 되고, 완료되면 AI급식추가에 New가 표시돼.";
+      } catch (err) {
+        if (statusText) statusText.textContent = err.message || "AI 분석 작업 시작에 실패했어.";
+      } finally {
+        if (submitButton) submitButton.disabled = false;
+      }
+    }, true);
+  });
+</script>
 {% endblock %}

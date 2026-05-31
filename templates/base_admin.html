@@ -28,8 +28,10 @@
   <div class="admin-shell">
     <aside class="admin-sidebar" id="adminSidebar">
       <a class="brand" href="{{ url_for('home') }}">
-        <span class="brand-mark">A</span>
-        <span><strong>AllergySafe</strong><small>Gentelella v5</small></span>
+        <span class="brand-mark" style="width:42px;height:34px;padding:2px;background:rgba(255,255,255,.08);overflow:hidden;">
+          <img src="{{ url_for('static', filename='logoimage_dark.png') }}" alt="MJ 로고" style="display:block;width:100%;height:100%;object-fit:contain;">
+        </span>
+        <span><strong>AllergySafe</strong><small>급식 안전관리</small></span>
       </a>
       <nav class="side-nav gentelella-nav" aria-label="관리자 메뉴">
         <div class="nav-section">GENERAL</div>

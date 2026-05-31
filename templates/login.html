@@ -6,88 +6,21 @@
   <title>학교 급식 안전관리 로그인</title>
   <style>
     *{box-sizing:border-box}
-    :root{
-      --navy:#1f2937;
-      --navy-2:#172033;
-      --line:#dfe5ee;
-      --line-soft:#edf1f6;
-      --text:#101828;
-      --muted:#667085;
-      --primary:#4bb99f;
-      --blue:#5a93da;
-      --danger:#d44747;
-      --warn:#e6a23a;
-      --shadow:0 1px 2px rgba(16,24,40,.08),0 18px 46px rgba(16,24,40,.08);
-    }
-    body{
-      margin:0;
-      min-height:100vh;
-      display:grid;
-      place-items:center;
-      padding:32px;
-      background:
-        radial-gradient(circle at 18% 16%,rgba(75,185,159,.16),transparent 28%),
-        radial-gradient(circle at 86% 12%,rgba(90,147,218,.16),transparent 30%),
-        linear-gradient(180deg,#f7f9fc 0%,#eef3f9 100%);
-      color:var(--text);
-      font-family:system-ui,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
-    }
-    svg{width:18px;height:18px;fill:currentColor;display:block;flex:0 0 auto}
-    .icon-sprite{position:absolute;width:0;height:0;overflow:hidden}
+    :root{--navy:#1f2937;--navy-2:#172033;--line:#dfe5ee;--line-soft:#edf1f6;--text:#101828;--muted:#667085;--primary:#4bb99f;--blue:#5a93da;--warn:#e6a23a;--shadow:0 1px 2px rgba(16,24,40,.08),0 18px 46px rgba(16,24,40,.08)}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:32px;background:radial-gradient(circle at 18% 16%,rgba(75,185,159,.16),transparent 28%),radial-gradient(circle at 86% 12%,rgba(90,147,218,.16),transparent 30%),linear-gradient(180deg,#f7f9fc 0%,#eef3f9 100%);color:var(--text);font-family:system-ui,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+    svg{width:18px;height:18px;fill:currentColor;display:block;flex:0 0 auto}.icon-sprite{position:absolute;width:0;height:0;overflow:hidden}
     .login-shell{width:min(1120px,100%);min-height:680px;display:grid;grid-template-columns:minmax(360px,.92fr) minmax(380px,1fr);border:1px solid var(--line);border-radius:8px;background:#fff;overflow:hidden;box-shadow:var(--shadow)}
-    .login-visual{position:relative;padding:26px;background:linear-gradient(180deg,rgba(255,255,255,.04),transparent 34%),linear-gradient(180deg,var(--navy),var(--navy-2));color:#f8fafc;overflow:hidden}
-    .login-visual:after{content:"";position:absolute;inset:auto -120px -140px auto;width:360px;height:360px;border-radius:999px;border:54px solid rgba(75,185,159,.08)}
-    .brand-row,.visual-top,.form-head,.mini-row,.activity-row,.input-wrap,.login-btn,.role-pill,.status-pill{display:flex;align-items:center}
-    .brand-row{gap:12px;margin-bottom:30px}
-    .brand-mark{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;background:var(--primary);color:#fff;font-weight:900;box-shadow:0 10px 24px rgba(75,185,159,.28)}
-    .brand-copy strong,.visual-title strong,.login-title,.metric strong,.activity-copy strong{display:block}
-    .brand-copy strong{font-size:16px}
-    .brand-copy span,.visual-title span,.activity-copy span,.helper-text{color:#91a4bf;font-size:13px}
-    .visual-top{justify-content:space-between;margin-bottom:22px;gap:14px}
-    .status-pill{gap:7px;min-height:32px;padding:0 10px;border:1px solid rgba(188,231,223,.32);border-radius:6px;background:rgba(75,185,159,.12);color:#9af0dc;font-size:12px;font-weight:800;white-space:nowrap}
-    .visual-title strong{font-size:30px;line-height:1.18;margin-bottom:10px}
-    .visual-title span{font-size:14px;line-height:1.7}
-    .dashboard-preview{position:relative;z-index:1;margin-top:28px;display:grid;gap:14px}
-    .preview-card{border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.055);box-shadow:0 18px 42px rgba(0,0,0,.18);overflow:hidden}
-    .preview-head{display:flex;justify-content:space-between;align-items:center;min-height:46px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px;font-weight:900}
-    .metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:14px}
-    .metric{min-height:92px;border-radius:8px;padding:13px;background:rgba(255,255,255,.075);border:1px solid rgba(255,255,255,.08)}
-    .metric-icon{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;margin-bottom:12px;background:rgba(75,185,159,.16);color:#8be8d4}
-    .metric:nth-child(2) .metric-icon{background:rgba(90,147,218,.18);color:#9cc5ff}
-    .metric:nth-child(3) .metric-icon{background:rgba(230,162,58,.18);color:#ffd18a}
-    .metric strong{font-size:22px;margin-bottom:3px}
-    .metric span{font-size:12px;color:#aab8cc}
-    .activity-list{padding:3px 16px 10px}
-    .activity-row{min-height:56px;gap:10px;border-bottom:1px solid rgba(255,255,255,.08)}
-    .activity-row:last-child{border-bottom:0}
-    .activity-avatar{width:32px;height:32px;border-radius:999px;display:grid;place-items:center;background:var(--primary);color:#fff;font-size:11px;font-weight:900;flex:0 0 auto}
-    .activity-avatar.blue{background:#3268bd}
-    .activity-avatar.warn{background:#df9827}
-    .activity-copy{min-width:0;flex:1}
-    .activity-copy strong{font-size:13px}
-    .activity-copy span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .activity-time{font-size:12px;color:#91a4bf;white-space:nowrap}
-    .login-panel{display:grid;align-content:center;padding:46px min(6vw,74px);background:linear-gradient(180deg,rgba(248,250,252,.92),rgba(255,255,255,.96)),#fff}
-    .form-card{width:100%;max-width:456px;margin:0 auto}
-    .form-head{justify-content:space-between;gap:18px;margin-bottom:22px}
-    .role-stack{display:flex;gap:8px;flex-wrap:wrap}
-    .role-pill{gap:7px;min-height:30px;padding:0 10px;border:1px solid #bce7df;border-radius:6px;background:#f4fffc;color:#3f9f88;font-size:12px;font-weight:900}
-    .login-title{font-size:30px;line-height:1.2;margin:0 0 8px}
-    .login-sub{color:var(--muted);margin:0 0 28px;font-size:14px;line-height:1.65}
-    .form-group{margin-bottom:16px}
-    .form-group label{display:block;margin-bottom:8px;color:#344054;font-size:13px;font-weight:900}
-    .input-wrap{min-height:48px;gap:10px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:0 13px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
-    .input-wrap:focus-within{border-color:#7ad6c3;box-shadow:0 0 0 4px rgba(75,185,159,.14)}
-    .input-wrap svg{color:#8793a8}
-    .input-wrap input{width:100%;min-width:0;height:46px;border:0;background:transparent;color:var(--text);font-size:15px;outline:0}
-    .input-wrap input::placeholder{color:#a9b4c6}
-    .login-btn{width:100%;justify-content:center;gap:9px;min-height:48px;margin-top:8px;border:0;border-radius:8px;background:var(--primary);color:#fff;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 14px 28px rgba(75,185,159,.26)}
-    .login-btn:hover{background:#43aa93}
-    .error-box{display:flex;gap:10px;align-items:flex-start;margin-bottom:16px;padding:12px 13px;border-radius:8px;background:#fff5f5;color:#9f2d2d;border:1px solid #ffd0d0;font-size:14px;font-weight:800}
-    .helper-row{display:grid;gap:10px;margin-top:18px;padding:14px;border:1px solid var(--line-soft);border-radius:8px;background:#f8fafc}
-    .mini-row{gap:9px;color:#344054;font-size:13px;font-weight:800}
-    .mini-row svg{color:var(--blue)}
-    .helper-text{color:#667085;line-height:1.55}
+    .login-visual{position:relative;padding:26px;background:linear-gradient(180deg,rgba(255,255,255,.04),transparent 34%),linear-gradient(180deg,var(--navy),var(--navy-2));color:#f8fafc;overflow:hidden}.login-visual:after{content:"";position:absolute;inset:auto -120px -140px auto;width:360px;height:360px;border-radius:999px;border:54px solid rgba(75,185,159,.08)}
+    .brand-row,.visual-top,.form-head,.mini-row,.activity-row,.input-wrap,.login-btn,.role-pill,.status-pill{display:flex;align-items:center}.brand-row{gap:12px;margin-bottom:30px}
+    .brand-mark{width:42px;height:34px;border-radius:8px;display:grid;place-items:center;background:rgba(255,255,255,.08);color:#fff;font-weight:900;box-shadow:0 10px 24px rgba(75,185,159,.18);overflow:hidden}.brand-mark img{width:100%;height:100%;object-fit:contain;display:block}
+    .brand-copy strong,.visual-title strong,.login-title,.metric strong,.activity-copy strong{display:block}.brand-copy strong{font-size:16px}.brand-copy span,.visual-title span,.activity-copy span,.helper-text{color:#91a4bf;font-size:13px}
+    .visual-top{justify-content:space-between;margin-bottom:22px;gap:14px}.status-pill{gap:7px;min-height:32px;padding:0 10px;border:1px solid rgba(188,231,223,.32);border-radius:6px;background:rgba(75,185,159,.12);color:#9af0dc;font-size:12px;font-weight:800;white-space:nowrap}.visual-title strong{font-size:30px;line-height:1.18;margin-bottom:10px}.visual-title span{font-size:14px;line-height:1.7}
+    .dashboard-preview{position:relative;z-index:1;margin-top:28px;display:grid;gap:14px}.preview-card{border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.055);box-shadow:0 18px 42px rgba(0,0,0,.18);overflow:hidden}.preview-head{display:flex;justify-content:space-between;align-items:center;min-height:46px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px;font-weight:900}
+    .metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:14px}.metric{min-height:92px;border-radius:8px;padding:13px;background:rgba(255,255,255,.075);border:1px solid rgba(255,255,255,.08)}.metric-icon{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;margin-bottom:12px;background:rgba(75,185,159,.16);color:#8be8d4}.metric:nth-child(2) .metric-icon{background:rgba(90,147,218,.18);color:#9cc5ff}.metric:nth-child(3) .metric-icon{background:rgba(230,162,58,.18);color:#ffd18a}.metric strong{font-size:22px;margin-bottom:3px}.metric span{font-size:12px;color:#aab8cc}
+    .activity-list{padding:3px 16px 10px}.activity-row{min-height:56px;gap:10px;border-bottom:1px solid rgba(255,255,255,.08)}.activity-row:last-child{border-bottom:0}.activity-avatar{width:32px;height:32px;border-radius:999px;display:grid;place-items:center;background:var(--primary);color:#fff;font-size:11px;font-weight:900;flex:0 0 auto}.activity-avatar.blue{background:#3268bd}.activity-avatar.warn{background:#df9827}.activity-copy{min-width:0;flex:1}.activity-copy strong{font-size:13px}.activity-copy span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.activity-time{font-size:12px;color:#91a4bf;white-space:nowrap}
+    .login-panel{display:grid;align-content:center;padding:46px min(6vw,74px);background:linear-gradient(180deg,rgba(248,250,252,.92),rgba(255,255,255,.96)),#fff}.form-card{width:100%;max-width:456px;margin:0 auto}.form-head{justify-content:space-between;gap:18px;margin-bottom:22px}.role-stack{display:flex;gap:8px;flex-wrap:wrap}.role-pill{gap:7px;min-height:30px;padding:0 10px;border:1px solid #bce7df;border-radius:6px;background:#f4fffc;color:#3f9f88;font-size:12px;font-weight:900}
+    .login-title{font-size:30px;line-height:1.2;margin:0 0 8px}.login-sub{color:var(--muted);margin:0 0 28px;font-size:14px;line-height:1.65}.form-group{margin-bottom:16px}.form-group label{display:block;margin-bottom:8px;color:#344054;font-size:13px;font-weight:900}.input-wrap{min-height:48px;gap:10px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:0 13px;box-shadow:0 1px 2px rgba(16,24,40,.04)}.input-wrap:focus-within{border-color:#7ad6c3;box-shadow:0 0 0 4px rgba(75,185,159,.14)}.input-wrap svg{color:#8793a8}.input-wrap input{width:100%;min-width:0;height:46px;border:0;background:transparent;color:var(--text);font-size:15px;outline:0}.input-wrap input::placeholder{color:#a9b4c6}
+    .login-btn{width:100%;justify-content:center;gap:9px;min-height:48px;margin-top:8px;border:0;border-radius:8px;background:var(--primary);color:#fff;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 14px 28px rgba(75,185,159,.26)}.login-btn:hover{background:#43aa93}.error-box{display:flex;gap:10px;align-items:flex-start;margin-bottom:16px;padding:12px 13px;border-radius:8px;background:#fff5f5;color:#9f2d2d;border:1px solid #ffd0d0;font-size:14px;font-weight:800}.helper-row{display:grid;gap:10px;margin-top:18px;padding:14px;border:1px solid var(--line-soft);border-radius:8px;background:#f8fafc}.mini-row{gap:9px;color:#344054;font-size:13px;font-weight:800}.mini-row svg{color:var(--blue)}.helper-text{color:#667085;line-height:1.55}
     @media(max-width:920px){body{padding:18px}.login-shell{grid-template-columns:1fr;min-height:0}.login-visual{display:none}.login-panel{padding:38px 24px}}
   </style>
 </head>
@@ -105,8 +38,8 @@
   <main class="login-shell">
     <section class="login-visual" aria-label="급식 안전 현황">
       <div class="brand-row">
-        <div class="brand-mark">A</div>
-        <div class="brand-copy"><strong>Allergy Guard v5</strong><span>School meal safety dashboard</span></div>
+        <div class="brand-mark"><img src="{{ url_for('static', filename='logoimage_dark.png') }}" alt="MJ 로고"></div>
+        <div class="brand-copy"><strong>AllergySafe</strong><span>학교 급식 안전관리 시스템</span></div>
       </div>
       <div class="visual-top">
         <div class="visual-title"><strong>오늘 급식 안전을<br>한눈에 확인하는 입구</strong><span>RFID 체크와 알레르기 위험 판단을 관리자 화면에서 빠르게 이어갈 수 있어.</span></div>
@@ -133,31 +66,16 @@
     </section>
     <section class="login-panel">
       <div class="form-card">
-        <div class="form-head">
-          <div class="role-stack"><span class="role-pill"><svg><use href="#i-shield"></use></svg> 관리자</span><span class="role-pill"><svg><use href="#i-user"></use></svg> 학생</span></div>
-        </div>
+        <div class="form-head"><div class="role-stack"><span class="role-pill"><svg><use href="#i-shield"></use></svg> 관리자</span><span class="role-pill"><svg><use href="#i-user"></use></svg> 학생</span></div></div>
         <h1 class="login-title">로그인</h1>
         <p class="login-sub">학교 급식 안전관리 시스템에 접속해 오늘의 급식, 학생 알레르기 정보, RFID 체크 상태를 확인해줘.</p>
-
-        {% if error %}
-          <div class="error-box"><svg><use href="#i-alert"></use></svg><span>{{ error }}</span></div>
-        {% endif %}
-
+        {% if error %}<div class="error-box"><svg><use href="#i-alert"></use></svg><span>{{ error }}</span></div>{% endif %}
         <form method="post" action="{{ url_for('login_page') }}">
-          <div class="form-group">
-            <label for="login_id">아이디</label>
-            <div class="input-wrap"><svg><use href="#i-user"></use></svg><input id="login_id" type="text" name="login_id" autocomplete="username" placeholder="아이디를 입력해줘"></div>
-          </div>
-          <div class="form-group">
-            <label for="login_pw">비밀번호</label>
-            <div class="input-wrap"><svg><use href="#i-lock"></use></svg><input id="login_pw" type="password" name="login_pw" autocomplete="current-password" placeholder="비밀번호를 입력해줘"></div>
-          </div>
+          <div class="form-group"><label for="login_id">아이디</label><div class="input-wrap"><svg><use href="#i-user"></use></svg><input id="login_id" type="text" name="login_id" autocomplete="username" placeholder="아이디를 입력해줘"></div></div>
+          <div class="form-group"><label for="login_pw">비밀번호</label><div class="input-wrap"><svg><use href="#i-lock"></use></svg><input id="login_pw" type="password" name="login_pw" autocomplete="current-password" placeholder="비밀번호를 입력해줘"></div></div>
           <button type="submit" class="login-btn">시스템 열기 <svg><use href="#i-arrow"></use></svg></button>
         </form>
-        <div class="helper-row">
-          <div class="mini-row"><svg><use href="#i-grid"></use></svg><span>Gentelella 기반 관리자 대시보드</span></div>
-          <div class="helper-text">접속 후 좌측 메뉴에서 학생관리, 급식관리, 급식로그, AI 안전도우미로 이동할 수 있어.</div>
-        </div>
+        <div class="helper-row"><div class="mini-row"><svg><use href="#i-grid"></use></svg><span>학교 급식 안전관리 대시보드</span></div><div class="helper-text">접속 후 좌측 메뉴에서 학생관리, 급식관리, 급식로그, AI 안전도우미로 이동할 수 있어.</div></div>
       </div>
     </section>
   </main>

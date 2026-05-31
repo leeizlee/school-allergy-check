@@ -29,7 +29,8 @@
       if (statusText) statusText.textContent = "분석 작업을 서버에 등록하고 있어. 이 화면을 벗어나도 계속 확인할게.";
       try {
         const res = await fetch(form.dataset.asyncAction, { method: "POST", body: new FormData(form) });
-        const data = await res.json();
+        const contentType = res.headers.get("content-type") || "";
+        const data = contentType.includes("application/json") ? await res.json() : {};
         if (!res.ok || !data.ok) throw new Error(data.error || "AI 분석 작업을 시작하지 못했어.");
         const jobs = JSON.parse(localStorage.getItem("allergySafeAiMealJobs") || "[]");
         jobs.unshift({ job_id: data.job_id, status_url: data.status_url, started_at: Date.now() });

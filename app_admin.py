@@ -48,6 +48,57 @@ def _v5_admin_home():
 
 app.view_functions["home"] = _v5_admin_home
 
+
+def _v5_ai_tools_page():
+    ok, response = admin_app_module.require_admin()
+    if not ok:
+        return response
+    return admin_app_module.render_admin_page(
+        "AI 안전상황실",
+        "오늘 급식 위험 브리핑, 학생별 안전계획, 메뉴 코드 점검을 나눠서 확인해.",
+        "ai_tools",
+    )
+
+
+app.view_functions["ai_tools_page"] = _v5_ai_tools_page
+
+
+@app.get("/admin/ai-tools/daily-brief")
+def ai_tools_daily_brief_page():
+    ok, response = admin_app_module.require_admin()
+    if not ok:
+        return response
+    return admin_app_module.render_admin_page(
+        "오늘 위험 브리핑",
+        "오늘 급식 메뉴와 주의 학생을 AI 보조 분석으로 빠르게 점검해.",
+        "ai_tools",
+    )
+
+
+@app.get("/admin/ai-tools/student-plan")
+def ai_tools_student_plan_page():
+    ok, response = admin_app_module.require_admin()
+    if not ok:
+        return response
+    return admin_app_module.render_admin_page(
+        "학생별 안전계획",
+        "학생 알레르기와 오늘 식단을 바탕으로 대체급식과 전달 메시지를 정리해.",
+        "ai_tools",
+    )
+
+
+@app.get("/admin/ai-tools/menu-review")
+def ai_tools_menu_review_page():
+    ok, response = admin_app_module.require_admin()
+    if not ok:
+        return response
+    return admin_app_module.render_admin_page(
+        "메뉴 코드 점검",
+        "급식 메뉴의 알레르기 코드 누락 가능성을 AI 보조 분석으로 확인해.",
+        "ai_tools",
+    )
+
+
 _PROJECT_ROOT = Path(__file__).resolve().parent
 app.static_folder = str(_PROJECT_ROOT / "static")
 app.template_folder = str(_PROJECT_ROOT / "templates")

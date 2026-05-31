@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{{ page_title }}</title>
+  <title>{{ page_title|default(title|default('AllergySafe 관리자')) }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='admin/admin_v5.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='admin/admin_v5_plus.css') }}">
 </head>
@@ -28,13 +28,13 @@
       <div class="sidebar-account"><button type="button" class="avatar-button" onclick="openMyAccountModal()" title="내 계정">{{ (login_name or '관')[:1] }}</button><div><strong>{{ login_name or '관리자' }}</strong><small>{{ login_id or 'Admin' }}</small></div><a href="{{ url_for('logout') }}">로그아웃</a></div>
     </aside>
     <section class="admin-main">
-      <header class="topbar"><div class="topbar-left"><button type="button" class="icon-button" id="sidebarToggle" title="메뉴 접기">☰</button><span>{{ title }}</span></div><div class="topbar-actions"><button type="button" class="soft-button" id="themeToggleBtn" onclick="toggleAdminTheme()">다크모드</button><button type="button" class="soft-button" onclick="openMyAccountModal()">관리자님</button></div></header>
-      <main class="page"><div class="page-heading"><div><div class="breadcrumb">관리자 / {{ title }}</div><div class="eyebrow">{% block eyebrow %}OVERVIEW{% endblock %}</div><h1>{{ title }}</h1><p>{{ subtitle }}</p></div><div class="page-actions">{% block page_actions %}{% endblock %}</div></div>{% block content %}{% endblock %}</main>
+      <header class="topbar"><div class="topbar-left"><button type="button" class="icon-button" id="sidebarToggle" title="메뉴 접기">☰</button><span>{{ title|default('관리자') }}</span></div><div class="topbar-actions"><button type="button" class="soft-button" id="themeToggleBtn" onclick="toggleAdminTheme()">다크모드</button><button type="button" class="soft-button" onclick="openMyAccountModal()">관리자님</button></div></header>
+      <main class="page"><div class="page-heading"><div><div class="breadcrumb">관리자 / {{ title|default('관리자') }}</div><div class="eyebrow">{% block eyebrow %}OVERVIEW{% endblock %}</div><h1>{{ title|default('관리자') }}</h1><p>{{ subtitle|default('') }}</p></div><div class="page-actions">{% block page_actions %}{% endblock %}</div></div>{% block content %}{% endblock %}</main>
     </section>
   </div>
-  <script id="adminChartData" type="application/json">{{ chart_data|tojson }}</script>
+  <script id="adminChartData" type="application/json">{{ (chart_data|default({}))|tojson }}</script>
   <script src="{{ url_for('static', filename='admin/admin_v5.js') }}"></script>
   <script src="{{ url_for('static', filename='admin/admin_v5_plus.js') }}"></script>
-  {{ legacy_admin_tail|safe }}
+  {{ legacy_admin_tail|default('')|safe }}
 </body>
 </html>

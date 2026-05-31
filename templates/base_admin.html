@@ -8,27 +8,82 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='admin/admin_v5_plus.css') }}">
 </head>
 <body class="admin-v5 light-mode">
+  <svg class="icon-sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M8.5 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm7.5 1a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7ZM2 20c.4-4.1 3-6 6.5-6s6.1 1.9 6.5 6H2Zm12.7 0c-.2-2-.9-3.6-2-4.8 1-.8 2.2-1.2 3.6-1.2 3 0 5.2 1.8 5.7 6h-7.3Z"/></symbol>
+    <symbol id="i-utensils" viewBox="0 0 24 24"><path d="M7 2h2v8a3 3 0 0 1-2 2.8V22H5v-9.2A3 3 0 0 1 3 10V2h2v7h2V2Zm12 0c1.1 1.8 2 4.3 2 7 0 2.3-.7 4.1-2 5v8h-2v-8c-1.3-.9-2-2.7-2-5 0-2.7.9-5.2 2-7h2Z"/></symbol>
+    <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 13h4l3-8 5 14 2-6h4v2h-2.6L15 23 10 9 8.4 15H3v-2Z"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M11 16V7.8L7.7 11 6.3 9.6 12 4l5.7 5.6-1.4 1.4L13 7.8V16h-2ZM5 18h14v2H5v-2Z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2 20 5v6c0 5.1-3.4 9.5-8 11-4.6-1.5-8-5.9-8-11V5l8-3Zm-1 13.5 6-6-1.4-1.4L11 12.7 8.9 10.6 7.5 12l3.5 3.5Z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M8 4V2h8v2h5v2H3V4h5Zm-2 4h12l-1 14H7L6 8Z"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><path d="M4 5h16v14H4V5Zm3 4 3 3-3 3 1.4 1.4L12.8 12 8.4 7.6 7 9Zm6 6h5v-2h-5v2Z"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 0-3 2V4Zm3 12h9V7a1 1 0 0 0-1-1H7v10.3c.3-.2.6-.3 1-.3Z"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 15.2A8.5 8.5 0 0 1 8.8 3.5 8.7 8.7 0 1 0 20.5 15.2Z"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 16v-5a6 6 0 1 0-12 0v5l-2 2v1h16v-1l-2-2Zm-8 5h4a2 2 0 0 1-4 0Z"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><path d="M3 5h18v14H3V5Zm2 3.2V17h14V8.2l-7 5.1-7-5.1ZM6.5 7l5.5 4 5.5-4h-11Z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><path d="m20 18.6-1.4 1.4-4.1-4.1a7 7 0 1 1 1.4-1.4l4.1 4.1ZM10.5 16a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11Z"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h16v2H4v-2Z"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m8.6 9.4 3.4 3.4 3.4-3.4 1.4 1.4-4.8 4.8-4.8-4.8 1.4-1.4Z"/></symbol>
+  </svg>
   <div class="admin-shell">
     <aside class="admin-sidebar" id="adminSidebar">
-      <a class="brand" href="{{ url_for('home') }}"><span class="brand-mark">A</span><span><strong>AllergySafe</strong><small>Gentelella v5</small></span></a>
-      <nav class="side-nav" aria-label="관리자 메뉴">
+      <a class="brand" href="{{ url_for('home') }}">
+        <span class="brand-mark">A</span>
+        <span><strong>AllergySafe</strong><small>Gentelella v5</small></span>
+      </a>
+      <nav class="side-nav gentelella-nav" aria-label="관리자 메뉴">
         <div class="nav-section">GENERAL</div>
-        <a class="nav-link {% if active_tab == 'admin_home' %}active{% endif %}" href="{{ url_for('home') }}"><span>H</span>관리자 홈</a>
-        <a class="nav-link {% if active_tab == 'student_manage' %}active{% endif %}" href="{{ url_for('student_manage_page') }}"><span>S</span>학생관리</a>
-        <a class="nav-link {% if active_tab == 'menu_manage' %}active{% endif %}" href="{{ url_for('menu_manage_page') }}"><span>M</span>급식관리</a>
-        <a class="nav-link {% if active_tab == 'lunch_log' %}active{% endif %}" href="{{ url_for('lunch_log_page') }}"><span>L</span>급식로그</a>
+        <section class="nav-group open">
+          <div class="nav-parent"><svg><use href="#i-grid"></use></svg><span>Dashboards</span><svg class="chevron"><use href="#i-chevron"></use></svg></div>
+          <div class="nav-children">
+            <a class="nav-link {% if active_tab == 'admin_home' %}active{% endif %}" href="{{ url_for('home') }}"><span class="nav-bullet"></span>관리자 홈</a>
+            <a class="nav-link {% if active_tab == 'lunch_log' %}active{% endif %}" href="{{ url_for('lunch_log_page') }}"><span class="nav-bullet"></span>급식로그</a>
+            <a class="nav-link {% if active_tab == 'ai_tools' %}active{% endif %}" href="{{ url_for('ai_tools_page') }}"><span class="nav-bullet"></span>AI안전도우미</a>
+          </div>
+        </section>
+
+        <section class="nav-group open">
+          <div class="nav-parent"><svg><use href="#i-users"></use></svg><span>Management</span><svg class="chevron"><use href="#i-chevron"></use></svg></div>
+          <div class="nav-children">
+            <a class="nav-link {% if active_tab == 'student_manage' %}active{% endif %}" href="{{ url_for('student_manage_page') }}"><span class="nav-bullet"></span>학생관리</a>
+            <a class="nav-link {% if active_tab == 'menu_manage' %}active{% endif %}" href="{{ url_for('menu_manage_page') }}"><span class="nav-bullet"></span>급식관리</a>
+            <a class="nav-link {% if active_tab == 'trash' %}active{% endif %}" href="{{ url_for('trash_page') }}"><span class="nav-bullet"></span>휴지통</a>
+          </div>
+        </section>
+
         <div class="nav-section">AI</div>
-        <a class="nav-link {% if active_tab == 'meal_ai' %}active{% endif %}" href="{{ url_for('meal_upload_page') }}"><span>U</span>AI급식추가</a>
-        <a class="nav-link {% if active_tab == 'ai_tools' %}active{% endif %}" href="{{ url_for('ai_tools_page') }}"><span>A</span>AI안전도우미</a>
+        <a class="nav-direct {% if active_tab == 'meal_ai' %}active{% endif %}" href="{{ url_for('meal_upload_page') }}"><svg><use href="#i-upload"></use></svg><span>AI급식추가</span></a>
+        <a class="nav-direct {% if active_tab == 'ai_tools' %}active{% endif %}" href="{{ url_for('ai_tools_page') }}"><svg><use href="#i-shield"></use></svg><span>AI안전도우미</span></a>
+
         <div class="nav-section">SYSTEM</div>
-        <a class="nav-link {% if active_tab == 'trash' %}active{% endif %}" href="{{ url_for('trash_page') }}"><span>T</span>휴지통</a>
-        <a class="nav-link" href="{{ url_for('kiosk_page') }}" target="_blank"><span>K</span>키오스크 열기</a>
-        {% if rfid_dashboard_url %}<a class="nav-link" href="{{ rfid_dashboard_url }}" target="_blank"><span>R</span>RFID 모니터</a>{% endif %}
+        <a class="nav-direct" href="{{ url_for('kiosk_page') }}" target="_blank"><svg><use href="#i-terminal"></use></svg><span>키오스크 열기</span></a>
+        {% if rfid_dashboard_url %}<a class="nav-direct" href="{{ rfid_dashboard_url }}" target="_blank"><svg><use href="#i-activity"></use></svg><span>RFID 모니터</span></a>{% endif %}
       </nav>
-      <div class="sidebar-account"><button type="button" class="avatar-button" onclick="openMyAccountModal()" title="내 계정">{{ (login_name or '관')[:1] }}</button><div><strong>{{ login_name or '관리자' }}</strong><small>{{ login_id or 'Admin' }}</small></div><a href="{{ url_for('logout') }}">로그아웃</a></div>
+      <div class="sidebar-account">
+        <button type="button" class="avatar-button" onclick="openMyAccountModal()" title="내 계정">{{ (login_name or '관')[:1] }}</button>
+        <div><strong>{{ login_name or '관리자' }}</strong><small>{{ login_id or 'Admin' }}</small></div>
+        <a href="{{ url_for('logout') }}">로그아웃</a>
+      </div>
     </aside>
     <section class="admin-main">
-      <header class="topbar"><div class="topbar-left"><button type="button" class="icon-button" id="sidebarToggle" title="메뉴 접기">☰</button><span>{{ title|default('관리자') }}</span></div><div class="topbar-actions"><button type="button" class="soft-button" id="themeToggleBtn" onclick="toggleAdminTheme()">다크모드</button><button type="button" class="soft-button" onclick="openMyAccountModal()">관리자님</button></div></header>
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" class="icon-button" id="sidebarToggle" title="메뉴 접기"><svg><use href="#i-menu"></use></svg></button>
+          <span>{{ title|default('관리자') }}</span>
+        </div>
+        <div class="topbar-search">
+          <svg><use href="#i-search"></use></svg>
+          <input type="search" placeholder="Search pages or run a command">
+          <kbd>⌘K</kbd>
+        </div>
+        <div class="topbar-actions">
+          <button type="button" class="docs-button" title="문서"><svg><use href="#i-book"></use></svg><span>Docs</span></button>
+          <button type="button" class="icon-action" id="themeToggleBtn" onclick="toggleAdminTheme()" title="다크모드"><svg><use href="#i-moon"></use></svg></button>
+          <button type="button" class="icon-action has-dot" title="알림"><svg><use href="#i-bell"></use></svg></button>
+          <button type="button" class="icon-action" title="메시지"><svg><use href="#i-mail"></use></svg></button>
+          <button type="button" class="topbar-avatar" onclick="openMyAccountModal()" title="내 계정">{{ (login_name or '관')[:1] }}</button>
+        </div>
+      </header>
       <main class="page"><div class="page-heading"><div><div class="breadcrumb">관리자 / {{ title|default('관리자') }}</div><div class="eyebrow">{% block eyebrow %}OVERVIEW{% endblock %}</div><h1>{{ title|default('관리자') }}</h1><p>{{ subtitle|default('') }}</p></div><div class="page-actions">{% block page_actions %}{% endblock %}</div></div>{% block content %}{% endblock %}</main>
     </section>
   </div>

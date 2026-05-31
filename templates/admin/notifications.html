@@ -1,0 +1,56 @@
+{% extends "base_admin.html" %}
+{% block eyebrow %}ACTIVITY{% endblock %}
+{% block page_actions %}
+  <button class="btn btn-light" type="button" onclick="markAdminNotificationsRead()">모두 읽음</button>
+{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="panel-title">
+    <div>
+      <h2>운영 알림</h2>
+      <p>RFID 인식, 학생/메뉴 변경, AI 분석 완료 같은 확인 항목을 시간순으로 보여줍니다.</p>
+    </div>
+    <span class="badge info">{{ notifications|length }}개</span>
+  </div>
+  <div class="notification-page-list" id="notificationPageList">
+    {% if notifications %}
+      {% for item in notifications %}
+      <a class="notification-item" href="{{ item.path|default(url_for('notifications_page')) }}" data-notification-id="{{ item.id|default(loop.index) }}" data-notification-target="{{ item.target|default('notifications') }}">
+        <span class="notification-icon {{ item.kind }}">{{ item.icon }}</span>
+        <div>
+          <strong>{{ item.title }}</strong>
+          <p>{{ item.detail }}</p>
+          <time>{{ item.time }}</time>
+        </div>
+      </a>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">
+        <strong>아직 표시할 알림이 없습니다.</strong>
+        <p>RFID 로그나 AI 분석 완료 항목이 생기면 이곳에 표시됩니다.</p>
+      </div>
+    {% endif %}
+  </div>
+</section>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const list = document.getElementById("notificationPageList");
+    if (list && typeof window.getAdminNotifications === "function" && typeof window.adminNotificationHtml === "function") {
+      let read = [];
+      try { read = JSON.parse(localStorage.getItem("allergySafeReadNotifications") || "[]"); } catch (err) {}
+      const readSet = new Set(read);
+      const items = window.getAdminNotifications();
+      if (items.length) {
+        list.innerHTML = items.map(function (item) { return window.adminNotificationHtml(item, readSet.has(item.id)); }).join("");
+      }
+    }
+    document.querySelectorAll("#notificationPageList [data-notification-id]").forEach(function (item) {
+      item.addEventListener("click", function () {
+        if (typeof window.markAdminNotificationsRead === "function") {
+          window.markAdminNotificationsRead(item.dataset.notificationTarget || "");
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

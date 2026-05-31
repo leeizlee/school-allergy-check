@@ -1,5 +1,7 @@
 import os
 import hmac
+import base64
+import io
 import threading
 import time
 from pathlib import Path
@@ -176,6 +178,53 @@ def _hardened_login_page():
 
 if _original_login_page is not None:
     app.view_functions["login_page"] = _hardened_login_page
+
+
+@app.post("/api/my-account/picture")
+def api_my_account_picture():
+    if not admin_app_module.is_logged_in():
+        return jsonify({"ok": False, "error": "로그인이 필요해"}), 401
+
+    upload = request.files.get("picture")
+    if not upload or not upload.filename:
+        return jsonify({"ok": False, "error": "프로필 사진 파일을 선택해줘"}), 400
+    if upload.mimetype and not upload.mimetype.startswith("image/"):
+        return jsonify({"ok": False, "error": "이미지 파일만 업로드할 수 있어"}), 400
+
+    raw = upload.read()
+    max_bytes = _int_env("PROFILE_IMAGE_MAX_MB", 3, min_value=1, max_value=8) * 1024 * 1024
+    if len(raw) > max_bytes:
+        return jsonify({"ok": False, "error": "프로필 사진은 3MB 이하로 올려줘"}), 413
+
+    login_id = admin_app_module.safe_str(session.get("login_id")).strip()
+    login_row = admin_app_module.get_login_by_id(login_id, include_trash=True)
+    if not login_row:
+        return jsonify({"ok": False, "error": "계정을 찾지 못했어"}), 404
+
+    try:
+        from PIL import Image, ImageOps
+
+        with Image.open(io.BytesIO(raw)) as image:
+            image = ImageOps.exif_transpose(image).convert("RGB")
+            width, height = image.size
+            side = min(width, height)
+            left = (width - side) // 2
+            top = (height - side) // 2
+            image = image.crop((left, top, left + side, top + side)).resize((192, 192), Image.LANCZOS)
+            output = io.BytesIO()
+            image.save(output, format="JPEG", quality=86, optimize=True)
+    except ImportError:
+        return jsonify({"ok": False, "error": "프로필 사진 처리를 위해 Pillow 설치가 필요해"}), 500
+    except Exception:
+        return jsonify({"ok": False, "error": "이미지를 읽지 못했어. 다른 사진으로 시도해줘"}), 400
+
+    picture = "data:image/jpeg;base64," + base64.b64encode(output.getvalue()).decode("ascii")
+    try:
+        admin_app_module.update_cell_by_header(admin_app_module.id_ws, login_row["row_index"], "picture", picture)
+    except ValueError:
+        return jsonify({"ok": False, "error": "id 시트에 picture 헤더가 필요해"}), 400
+
+    return jsonify({"ok": True, "picture": picture})
 
 
 @app.before_request

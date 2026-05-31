@@ -30,6 +30,10 @@ _PROJECT_ROOT = Path(__file__).resolve().parent
 app.static_folder = str(_PROJECT_ROOT / "static")
 app.template_folder = str(_PROJECT_ROOT / "templates")
 
+_LOGIN_TEMPLATE_PATH = _PROJECT_ROOT / "templates" / "login.html"
+if _LOGIN_TEMPLATE_PATH.exists():
+    admin_app_module.LOGIN_HTML = _LOGIN_TEMPLATE_PATH.read_text(encoding="utf-8")
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5001")), debug=False)

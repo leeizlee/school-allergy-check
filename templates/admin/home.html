@@ -1,8 +1,5 @@
 {% extends "base_admin.html" %}
-{% block page_actions %}
-  <a class="btn btn-outline" href="{{ url_for('lunch_log_page') }}">로그 보기</a>
-  <a class="btn btn-primary" href="{{ url_for('meal_upload_page') }}">AI 급식 추가</a>
-{% endblock %}
+{% block page_actions %}{% endblock %}
 {% block content %}
 {% if dashboard.stats.today_danger_count %}
 <div class="alert-panel danger"><span class="alert-icon">!</span><div><strong>오늘 위험 감지 {{ dashboard.stats.today_danger_count }}건</strong><p>최근 스캔 로그와 위험 가능 메뉴를 먼저 확인해 주세요.</p></div></div>
@@ -37,7 +34,7 @@
 </section>
 
 <section class="dashboard-grid">
-  <article class="panel"><div class="panel-title"><div><h2>오늘의 급식</h2><p>등록된 메뉴와 알레르기 코드</p></div><a class="btn btn-light" href="{{ url_for('menu_manage_page') }}">관리</a></div><div class="item-list">{% if dashboard.today_menus %}{% for menu in dashboard.today_menus[:8] %}<div class="list-row"><div><strong>{{ menu.menu_name or '-' }}</strong><small>{{ menu.allergy_names or '알레르기 코드 없음' }}</small></div>{% if menu.allergy_names %}<span class="badge danger">주의</span>{% else %}<span class="badge safe">안전</span>{% endif %}</div>{% endfor %}{% else %}<div class="empty-state"><strong>오늘 등록된 급식 메뉴가 없습니다.</strong><p>급식관리 또는 AI급식추가에서 오늘 식단을 등록하세요.</p><a class="btn btn-primary" href="{{ url_for('meal_upload_page') }}">AI로 추가</a></div>{% endif %}</div></article>
+  <article class="panel"><div class="panel-title"><div><h2>오늘의 급식</h2><p>등록된 메뉴와 알레르기 코드</p></div><a class="btn btn-light" href="{{ url_for('menu_manage_page') }}">관리</a></div><div class="item-list">{% if dashboard.today_menus %}{% for menu in dashboard.today_menus[:8] %}<div class="list-row"><div><strong>{{ menu.menu_name or '-' }}</strong><small>{{ menu.allergy_names or '알레르기 코드 없음' }}</small></div>{% if menu.allergy_names %}<span class="badge danger">주의</span>{% else %}<span class="badge safe">안전</span>{% endif %}</div>{% endfor %}{% else %}<div class="empty-state"><strong>오늘 등록된 급식 메뉴가 없습니다.</strong><p>급식관리에서 오늘 식단을 등록하세요.</p></div>{% endif %}</div></article>
   <article class="panel"><div class="panel-title"><div><h2>오늘 위험 가능 메뉴</h2><p>알레르기 코드가 포함된 메뉴</p></div></div><div class="item-list">{% if dashboard.risk_menus %}{% for menu in dashboard.risk_menus[:8] %}<div class="list-row"><div><strong>{{ menu.menu_name or '-' }}</strong><small>{{ menu.allergy_names or '-' }}</small></div><span class="badge danger">주의</span></div>{% endfor %}{% else %}<div class="empty-state"><strong>위험 가능 메뉴 없음</strong><p>오늘 급식 메뉴에서 알레르기 코드가 감지되지 않았습니다.</p></div>{% endif %}</div></article>
 </section>
 

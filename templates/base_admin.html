@@ -19,6 +19,17 @@
     .nav-children .nav-link{padding-left:14px}
     .workflow-list>a{border:1px solid var(--line-soft);border-radius:8px;padding:18px;background:#fff;display:block}
     body:not(.light-mode).admin-v5 .workflow-list>a{background:var(--card)}
+    .collapsed-icon-nav{display:none}
+    .collapsed-icon-link{width:42px;height:42px;border-radius:8px;display:grid;place-items:center;color:#94a3b8}
+    .collapsed-icon-link:hover,.collapsed-icon-link.active{color:#fff;background:#223242;box-shadow:inset 3px 0 0 #55c3aa}
+    .collapsed-icon-link svg{width:18px;height:18px}
+    .collapsed-icon-divider{width:28px;height:1px;background:rgba(148,163,184,.18);margin:4px 0}
+    body.sidebar-collapsed .admin-sidebar{overflow:hidden}
+    body.sidebar-collapsed .brand{justify-content:center;padding:12px 8px}
+    body.sidebar-collapsed .brand-mark{margin:0}
+    body.sidebar-collapsed .gentelella-nav{display:none!important}
+    body.sidebar-collapsed .collapsed-icon-nav{display:grid;gap:7px;justify-items:center;padding:14px 8px 8px}
+    body.sidebar-collapsed .sidebar-account{grid-template-columns:1fr;padding:12px 8px;justify-items:center}
   </style>
 </head>
 <body class="admin-v5 light-mode">
@@ -87,6 +98,23 @@
             {% if rfid_dashboard_url %}<a class="nav-link" href="{{ rfid_dashboard_url }}" target="_blank"><span class="nav-bullet"></span>키오스크 열기</a>{% endif %}
           </div>
         </section>
+      </nav>
+      <nav class="collapsed-icon-nav" aria-label="축소 관리자 메뉴">
+        <a class="collapsed-icon-link {% if active_tab == 'admin_home' %}active{% endif %}" href="{{ url_for('home') }}" title="관리자 홈" aria-label="관리자 홈"><svg><use href="#i-grid"></use></svg></a>
+        <a class="collapsed-icon-link {% if active_tab == 'lunch_log' %}active{% endif %}" href="{{ url_for('lunch_log_page') }}" title="급식로그" aria-label="급식로그"><svg><use href="#i-activity"></use></svg></a>
+        <span class="collapsed-icon-divider" aria-hidden="true"></span>
+        <a class="collapsed-icon-link {% if active_tab == 'student_manage' %}active{% endif %}" href="{{ url_for('student_manage_page') }}" title="학생관리" aria-label="학생관리"><svg><use href="#i-users"></use></svg></a>
+        <a class="collapsed-icon-link {% if active_tab == 'menu_manage' %}active{% endif %}" href="{{ url_for('menu_manage_page') }}" title="급식관리" aria-label="급식관리"><svg><use href="#i-utensils"></use></svg></a>
+        <a class="collapsed-icon-link {% if active_tab == 'trash' %}active{% endif %}" href="{{ url_for('trash_page') }}" title="휴지통" aria-label="휴지통"><svg><use href="#i-trash"></use></svg></a>
+        <span class="collapsed-icon-divider" aria-hidden="true"></span>
+        <a class="collapsed-icon-link {% if active_tab == 'meal_ai' %}active{% endif %}" href="{{ url_for('meal_upload_page') }}" title="AI급식추가" aria-label="AI급식추가"><svg><use href="#i-upload"></use></svg></a>
+        <a class="collapsed-icon-link {% if request.path == url_for('ai_tools_page') %}active{% endif %}" href="{{ url_for('ai_tools_page') }}" title="AI 안전상황실" aria-label="AI 안전상황실"><svg><use href="#i-shield"></use></svg></a>
+        <a class="collapsed-icon-link {% if request.path == url_for('ai_tools_daily_brief_page') %}active{% endif %}" href="{{ url_for('ai_tools_daily_brief_page') }}" title="오늘 위험 브리핑" aria-label="오늘 위험 브리핑"><svg><use href="#i-bell"></use></svg></a>
+        <a class="collapsed-icon-link {% if request.path == url_for('ai_tools_student_plan_page') %}active{% endif %}" href="{{ url_for('ai_tools_student_plan_page') }}" title="학생별 안전계획" aria-label="학생별 안전계획"><svg><use href="#i-users"></use></svg></a>
+        <a class="collapsed-icon-link {% if request.path == url_for('ai_tools_menu_review_page') %}active{% endif %}" href="{{ url_for('ai_tools_menu_review_page') }}" title="메뉴 코드 점검" aria-label="메뉴 코드 점검"><svg><use href="#i-search"></use></svg></a>
+        <span class="collapsed-icon-divider" aria-hidden="true"></span>
+        <a class="collapsed-icon-link" href="{{ url_for('kiosk_page') }}" target="_blank" title="라즈베리파이 연결" aria-label="라즈베리파이 연결"><svg><use href="#i-terminal"></use></svg></a>
+        {% if rfid_dashboard_url %}<a class="collapsed-icon-link" href="{{ rfid_dashboard_url }}" target="_blank" title="키오스크 열기" aria-label="키오스크 열기"><svg><use href="#i-activity"></use></svg></a>{% endif %}
       </nav>
       <div class="sidebar-account">
         <button type="button" class="avatar-button" onclick="openMyAccountModal()" title="내 계정">{{ (login_name or '관')[:1] }}</button>

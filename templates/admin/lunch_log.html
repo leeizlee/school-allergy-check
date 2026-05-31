@@ -5,6 +5,14 @@
   <a class="btn btn-primary" href="{{ url_for('kiosk_page') }}" target="_blank">RFID 모니터</a>
 {% endblock %}
 {% block content %}
+{% set lunch_insights = lunch_insights|default({}) %}
+{% set today_stats = today_stats|default({}) %}
+{% set attendance_summary = attendance_summary|default({}) %}
+{% set lunch_log_rows = lunch_log_rows|default([]) %}
+{% set available_classes = available_classes|default([]) %}
+{% set selected_class = selected_class|default('all') %}
+{% set selected_date_input = selected_date_input|default('') %}
+{% set active_lunch_date = active_lunch_date|default(today_label|default('')) %}
 {% if lunch_insights.danger_count %}
 <div class="alert-panel danger">
   <span class="alert-icon">!</span>
@@ -86,7 +94,7 @@
   <article class="panel">
     <div class="panel-title"><div><h2>위험/미등록 확인</h2><p>급식실에서 바로 확인할 항목</p></div></div>
     <div class="item-list">
-      {% set issue_rows = lunch_insights.danger_rows + lunch_insights.unknown_rows %}
+      {% set issue_rows = (lunch_insights.danger_rows|default([])) + (lunch_insights.unknown_rows|default([])) %}
       {% if issue_rows %}
         {% for row in issue_rows[:8] %}
         <div class="list-row">

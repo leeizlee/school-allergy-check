@@ -1,12 +1,235 @@
-(function(){
-function chartData(){const n=document.getElementById('adminChartData');if(!n)return{};try{return JSON.parse(n.textContent||'{}')||{}}catch(e){return{}}}
-function apiError(message){const text=String(message||'요청 처리 중 오류가 발생했습니다.');const host=document.querySelector('main.page')||document.body;let b=document.getElementById('adminApiErrorBanner');if(!b){b=document.createElement('div');b.id='adminApiErrorBanner';b.className='admin-error-banner';b.innerHTML='<strong>요청 실패</strong><span></span><button type="button" aria-label="닫기">×</button>';b.querySelector('button').addEventListener('click',()=>b.remove());host.prepend(b)}b.querySelector('span').textContent=text}
-function empty(c,w,h){c.fillStyle='#98a2b3';c.font='13px Segoe UI';c.textAlign='center';c.fillText('표시할 데이터가 없습니다',w/2,h/2);c.textAlign='left'}
-function sized(canvas){const w=canvas.clientWidth||640,h=Number(canvas.getAttribute('height'))||220,r=window.devicePixelRatio||1;canvas.width=w*r;canvas.height=h*r;const c=canvas.getContext('2d');c.scale(r,r);c.clearRect(0,0,w,h);return{c,w,h}}
-function bar(canvas,d){const s=sized(canvas),c=s.c,w=s.w,h=s.h,labels=Array.isArray(d.labels)?d.labels:[],values=Array.isArray(d.values)?d.values.map(v=>Number(v||0)):[],max=Math.max(...values,1),p={l:34,r:18,t:18,b:30},cw=w-p.l-p.r,ch=h-p.t-p.b;c.strokeStyle='#e8edf4';c.lineWidth=1;c.fillStyle='#738198';c.font='11px Segoe UI';for(let i=0;i<=4;i++){const y=p.t+ch-ch*i/4;c.beginPath();c.moveTo(p.l,y);c.lineTo(w-p.r,y);c.stroke();c.fillText(String(Math.round(max*i/4)),4,y+4)}if(!values.some(Boolean)){empty(c,w,h);return}const gap=4,bw=Math.max(4,cw/Math.max(values.length,1)-gap);values.forEach((v,i)=>{const x=p.l+i*(bw+gap),bh=ch*v/max,y=p.t+ch-bh,g=c.createLinearGradient(0,y,0,y+bh);g.addColorStop(0,'#5b8def');g.addColorStop(1,'#4bb99f');c.fillStyle=g;c.fillRect(x,y,bw,bh||2);if(labels[i]&&i%Math.ceil(labels.length/8||1)===0){c.fillStyle='#738198';c.fillText(labels[i],x,h-10)}})}
-function donut(canvas,d){const s=sized(canvas),c=s.c,w=s.w,h=s.h,values=Array.isArray(d.values)?d.values.map(v=>Number(v||0)):[],labels=Array.isArray(d.labels)?d.labels:[],colors=d.colors||['#47b881','#e55353','#f0ad4e','#6c7ae0'],total=values.reduce((a,b)=>a+b,0);if(!total){empty(c,w,h);return}const cx=w*.38,cy=h*.48,rad=Math.min(w,h)*.29;let angle=-Math.PI/2;values.forEach((v,i)=>{const slice=Math.PI*2*v/total;c.beginPath();c.arc(cx,cy,rad,angle,angle+slice);c.lineWidth=22;c.strokeStyle=colors[i%colors.length];c.stroke();angle+=slice});c.fillStyle='#111827';c.font='700 24px Segoe UI';c.textAlign='center';c.fillText(String(total),cx,cy+8);c.textAlign='left';c.font='12px Segoe UI';labels.forEach((label,i)=>{const y=48+i*24;c.fillStyle=colors[i%colors.length];c.fillRect(w*.66,y-9,9,9);c.fillStyle='#475467';c.fillText(`${label} ${values[i]||0}`,w*.66+16,y)})}
-function renderCharts(){const data=chartData();document.querySelectorAll('canvas.admin-chart').forEach(canvas=>{if(canvas.classList.contains('line')||canvas.classList.contains('area'))return;try{const d=data[canvas.dataset.chart]||{};canvas.classList.contains('donut')?donut(canvas,d):bar(canvas,d)}catch(e){const c=canvas.getContext('2d');if(c)empty(c,canvas.clientWidth||320,Number(canvas.getAttribute('height'))||180)}})}
-function installFetchGuard(){if(!window.fetch||window.__adminV5FetchGuard)return;window.__adminV5FetchGuard=true;const nativeFetch=window.fetch.bind(window);window.fetch=async(...args)=>{const res=await nativeFetch(...args),originalJson=res.json.bind(res);res.json=async()=>{const type=res.headers.get('content-type')||'',text=await res.clone().text();let payload=null;if(type.includes('application/json')){try{payload=JSON.parse(text)}catch(e){payload=null}}if(!res.ok){const message=payload?.error||payload?.message||`서버 오류 ${res.status}`;apiError(message);return{ok:false,error:message,status:res.status}}if(payload!==null)return payload;if(/^\s*</.test(text)){const message='서버가 JSON 대신 HTML 페이지를 반환했습니다. 로그인 상태나 서버 오류를 확인해 주세요.';apiError(message);return{ok:false,error:message,status:res.status}}try{return JSON.parse(text)}catch(e){try{return await originalJson()}catch(j){const message='서버 응답을 JSON으로 해석할 수 없습니다.';apiError(message);return{ok:false,error:message,status:res.status}}}};return res}}
-function installTableFilters(){document.querySelectorAll('.js-table-filter').forEach(input=>{input.addEventListener('input',()=>{const target=document.querySelector(input.dataset.target||'');if(!target)return;const q=input.value.trim().toLowerCase();target.querySelectorAll('tbody tr').forEach(row=>{row.hidden=Boolean(q)&&!row.textContent.toLowerCase().includes(q)})})})}
-installFetchGuard();document.addEventListener('DOMContentLoaded',()=>{installTableFilters();renderCharts();document.getElementById('sidebarToggle')?.addEventListener('click',()=>document.body.classList.toggle('sidebar-collapsed'))});window.addEventListener('resize',()=>{clearTimeout(window.__adminV5ResizeTimer);window.__adminV5ResizeTimer=setTimeout(renderCharts,120)})
+(function () {
+  function chartData() {
+    const node = document.getElementById("adminChartData");
+    if (!node) return {};
+    try {
+      return JSON.parse(node.textContent || "{}") || {};
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function apiError(message) {
+    const text = String(message || "요청 처리 중 오류가 발생했습니다.");
+    const host = document.querySelector("main.page") || document.body;
+    let banner = document.getElementById("adminApiErrorBanner");
+
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.id = "adminApiErrorBanner";
+      banner.className = "admin-error-banner";
+      banner.innerHTML = '<strong>요청 실패</strong><span></span><button type="button" aria-label="닫기">×</button>';
+      banner.querySelector("button").addEventListener("click", () => banner.remove());
+      host.prepend(banner);
+    }
+
+    banner.querySelector("span").textContent = text;
+  }
+
+  function empty(ctx, width, height) {
+    ctx.fillStyle = "#98a2b3";
+    ctx.font = "13px Segoe UI";
+    ctx.textAlign = "center";
+    ctx.fillText("표시할 데이터가 없습니다", width / 2, height / 2);
+    ctx.textAlign = "left";
+  }
+
+  function sized(canvas) {
+    const width = canvas.clientWidth || 640;
+    const height = Number(canvas.getAttribute("height")) || 220;
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = width * ratio;
+    canvas.height = height * ratio;
+    const ctx = canvas.getContext("2d");
+    ctx.scale(ratio, ratio);
+    ctx.clearRect(0, 0, width, height);
+    return { ctx, width, height };
+  }
+
+  function bar(canvas, data) {
+    const { ctx, width, height } = sized(canvas);
+    const labels = Array.isArray(data.labels) ? data.labels : [];
+    const values = Array.isArray(data.values) ? data.values.map((value) => Number(value || 0)) : [];
+    const max = Math.max(...values, 1);
+    const padding = { left: 34, right: 18, top: 18, bottom: 30 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+
+    ctx.strokeStyle = "#e8edf4";
+    ctx.lineWidth = 1;
+    ctx.fillStyle = "#738198";
+    ctx.font = "11px Segoe UI";
+
+    for (let i = 0; i <= 4; i += 1) {
+      const y = padding.top + chartHeight - (chartHeight * i) / 4;
+      ctx.beginPath();
+      ctx.moveTo(padding.left, y);
+      ctx.lineTo(width - padding.right, y);
+      ctx.stroke();
+      ctx.fillText(String(Math.round((max * i) / 4)), 4, y + 4);
+    }
+
+    if (!values.some(Boolean)) {
+      empty(ctx, width, height);
+      return;
+    }
+
+    const gap = 4;
+    const barWidth = Math.max(4, chartWidth / Math.max(values.length, 1) - gap);
+    values.forEach((value, index) => {
+      const x = padding.left + index * (barWidth + gap);
+      const barHeight = (chartHeight * value) / max;
+      const y = padding.top + chartHeight - barHeight;
+      const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
+      gradient.addColorStop(0, "#5b8def");
+      gradient.addColorStop(1, "#4bb99f");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(x, y, barWidth, barHeight || 2);
+
+      if (labels[index] && index % Math.ceil(labels.length / 8 || 1) === 0) {
+        ctx.fillStyle = "#738198";
+        ctx.fillText(labels[index], x, height - 10);
+      }
+    });
+  }
+
+  function donut(canvas, data) {
+    const { ctx, width, height } = sized(canvas);
+    const values = Array.isArray(data.values) ? data.values.map((value) => Number(value || 0)) : [];
+    const labels = Array.isArray(data.labels) ? data.labels : [];
+    const colors = data.colors || ["#47b881", "#e55353", "#f0ad4e", "#6c7ae0"];
+    const total = values.reduce((sum, value) => sum + value, 0);
+
+    if (!total) {
+      empty(ctx, width, height);
+      return;
+    }
+
+    const centerX = width * 0.38;
+    const centerY = height * 0.48;
+    const radius = Math.min(width, height) * 0.29;
+    let angle = -Math.PI / 2;
+
+    values.forEach((value, index) => {
+      const slice = (Math.PI * 2 * value) / total;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, angle, angle + slice);
+      ctx.lineWidth = 22;
+      ctx.strokeStyle = colors[index % colors.length];
+      ctx.stroke();
+      angle += slice;
+    });
+
+    ctx.fillStyle = "#111827";
+    ctx.font = "700 24px Segoe UI";
+    ctx.textAlign = "center";
+    ctx.fillText(String(total), centerX, centerY + 8);
+    ctx.textAlign = "left";
+    ctx.font = "12px Segoe UI";
+    labels.forEach((label, index) => {
+      const y = 48 + index * 24;
+      ctx.fillStyle = colors[index % colors.length];
+      ctx.fillRect(width * 0.66, y - 9, 9, 9);
+      ctx.fillStyle = "#475467";
+      ctx.fillText(`${label} ${values[index] || 0}`, width * 0.66 + 16, y);
+    });
+  }
+
+  function renderCharts() {
+    const data = chartData();
+    document.querySelectorAll("canvas.admin-chart").forEach((canvas) => {
+      if (canvas.classList.contains("line") || canvas.classList.contains("area")) return;
+      try {
+        const chart = data[canvas.dataset.chart] || {};
+        canvas.classList.contains("donut") ? donut(canvas, chart) : bar(canvas, chart);
+      } catch (error) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) empty(ctx, canvas.clientWidth || 320, Number(canvas.getAttribute("height")) || 180);
+      }
+    });
+  }
+
+  function installFetchGuard() {
+    if (!window.fetch || window.__adminV5FetchGuard) return;
+    window.__adminV5FetchGuard = true;
+    window.showAdminApiError = apiError;
+    const nativeFetch = window.fetch.bind(window);
+
+    window.fetch = async (...args) => {
+      let response;
+      try {
+        response = await nativeFetch(...args);
+      } catch (error) {
+        apiError("네트워크 요청에 실패했습니다. 연결 상태를 확인한 뒤 다시 시도해 주세요.");
+        throw error;
+      }
+
+      const originalJson = response.json.bind(response);
+      response.json = async () => {
+        const type = response.headers.get("content-type") || "";
+        const text = await response.clone().text();
+        let payload = null;
+
+        if (type.includes("application/json")) {
+          try {
+            payload = JSON.parse(text);
+          } catch (error) {
+            payload = null;
+          }
+        }
+
+        if (!response.ok) {
+          const message = payload?.error || payload?.message || `서버 오류 ${response.status}`;
+          apiError(message);
+          return { ok: false, error: message, status: response.status };
+        }
+
+        if (payload !== null) return payload;
+
+        if (/^\s*</.test(text)) {
+          const message = "서버가 JSON 대신 HTML 페이지를 반환했습니다. 로그인 상태나 서버 오류를 확인해 주세요.";
+          apiError(message);
+          return { ok: false, error: message, status: response.status };
+        }
+
+        try {
+          return JSON.parse(text);
+        } catch (error) {
+          try {
+            return await originalJson();
+          } catch (jsonError) {
+            const message = "서버 응답을 JSON으로 해석할 수 없습니다.";
+            apiError(message);
+            return { ok: false, error: message, status: response.status };
+          }
+        }
+      };
+
+      return response;
+    };
+  }
+
+  function installTableFilters() {
+    document.querySelectorAll(".js-table-filter").forEach((input) => {
+      input.addEventListener("input", () => {
+        const target = document.querySelector(input.dataset.target || "");
+        if (!target) return;
+        const query = input.value.trim().toLowerCase();
+        target.querySelectorAll("tbody tr").forEach((row) => {
+          row.hidden = Boolean(query) && !row.textContent.toLowerCase().includes(query);
+        });
+      });
+    });
+  }
+
+  installFetchGuard();
+  document.addEventListener("DOMContentLoaded", () => {
+    installTableFilters();
+    renderCharts();
+    document.getElementById("sidebarToggle")?.addEventListener("click", () => document.body.classList.toggle("sidebar-collapsed"));
+  });
+  window.addEventListener("resize", () => {
+    clearTimeout(window.__adminV5ResizeTimer);
+    window.__adminV5ResizeTimer = setTimeout(renderCharts, 120);
+  });
 })();

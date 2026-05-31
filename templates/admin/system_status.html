@@ -1,0 +1,109 @@
+{% extends "base_admin.html" %}
+{% block eyebrow %}OPERATIONS CENTER{% endblock %}
+{% block page_actions %}
+  <a class="btn btn-outline" href="{{ url_for('audit_log_page') }}">감사 로그</a>
+  <button class="btn btn-primary" type="button" onclick="location.reload()">상태 새로고침</button>
+{% endblock %}
+{% block content %}
+<section class="stat-grid">
+  {% for item in system_status.cards %}
+  <article class="stat-card {{ item.state }} with-icon">
+    <span class="stat-icon">{{ item.icon }}</span>
+    <span>{{ item.name }}</span>
+    <strong>{{ item.value }}</strong>
+    <small>{{ item.detail }}</small>
+    <div class="mini-bars {% if item.state == 'danger' %}red{% elif item.state == 'warn' %}amber{% elif item.state == 'ai' %}blue{% else %}mint{% endif %}"></div>
+  </article>
+  {% endfor %}
+</section>
+
+<section class="dashboard-grid">
+  <article class="panel panel-wide">
+    <div class="panel-title">
+      <div><h2>Google Sheets 연결 상태</h2><p>급식, 학생, 계정, 로그 시트의 읽기 가능 여부를 확인합니다.</p></div>
+      <span class="badge info">{{ system_status.sheet_items|length }}개 시트</span>
+    </div>
+    <div class="item-list">
+      {% for item in system_status.sheet_items %}
+      <div class="list-row">
+        <div><strong>{{ item.name }}</strong><small>{{ item.detail or '-' }}</small></div>
+        <span class="badge {{ item.state }}">{{ item.value }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-title">
+      <div><h2>서버 런타임</h2><p>Render 배포 기준 운영 정보</p></div>
+    </div>
+    <div class="item-list">
+      <div class="list-row compact"><div><strong>시작 시간</strong><small>{{ system_status.server.started_at }}</small></div><span class="badge safe">ON</span></div>
+      <div class="list-row compact"><div><strong>업타임</strong><small>{{ system_status.server.uptime }}</small></div><span class="badge info">LIVE</span></div>
+      <div class="list-row compact"><div><strong>Python</strong><small>{{ system_status.server.python }}</small></div><span class="badge muted">ENV</span></div>
+      <div class="list-row compact"><div><strong>실행 환경</strong><small>{{ system_status.server.render }}</small></div><span class="badge ai">APP</span></div>
+    </div>
+  </article>
+</section>
+
+<section class="dashboard-grid equal">
+  <article class="panel">
+    <div class="panel-title"><div><h2>최근 AI 작업</h2><p>백그라운드 급식표 분석 작업 상태</p></div><span class="badge ai">{{ system_status.ai_jobs|length }}건</span></div>
+    <div class="item-list">
+      {% if system_status.ai_jobs %}
+        {% for job in system_status.ai_jobs %}
+        <div class="list-row">
+          <div><strong>{{ job.filename }}</strong><small>{{ job.created_at }} · {{ job.message }}</small></div>
+          <span class="badge {% if job.status == 'done' %}safe{% elif job.status == 'error' %}danger{% else %}ai{% endif %}">{{ job.status }}</span>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state"><strong>최근 AI 작업이 없습니다.</strong><p>AI급식추가에서 분석을 시작하면 여기에 표시됩니다.</p></div>
+      {% endif %}
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-title"><div><h2>최근 오류</h2><p>실패한 요청과 위험 이벤트</p></div><span class="badge {% if system_status.recent_errors or system_status.danger_events %}danger{% else %}safe{% endif %}">{{ system_status.recent_errors|length + system_status.danger_events|length }}건</span></div>
+    <div class="item-list">
+      {% if system_status.recent_errors or system_status.danger_events %}
+        {% for item in system_status.recent_errors %}
+        <div class="list-row"><div><strong>{{ item.action }}</strong><small>{{ item.time }} · {{ item.detail }}</small></div><span class="badge danger">{{ item.status_code }}</span></div>
+        {% endfor %}
+        {% for item in system_status.danger_events %}
+        <div class="list-row"><div><strong>{{ item.title }}</strong><small>{{ item.time }} · {{ item.detail }}</small></div><span class="badge danger">AI</span></div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state"><strong>최근 오류가 없습니다.</strong><p>관리 기능과 AI 작업이 정상 범위에서 처리되고 있습니다.</p></div>
+      {% endif %}
+    </div>
+  </article>
+</section>
+
+<section class="panel">
+  <div class="panel-title">
+    <div><h2>운영 활동 미리보기</h2><p>감사 로그에 기록된 최근 관리자 작업</p></div>
+    <a class="btn btn-light" href="{{ url_for('audit_log_page') }}">전체 보기</a>
+  </div>
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>시간</th><th>작업</th><th>담당자</th><th>분류</th><th>상태</th></tr></thead>
+      <tbody>
+        {% if system_status.audit_items %}
+          {% for item in system_status.audit_items %}
+          <tr>
+            <td>{{ item.time }}</td>
+            <td><strong>{{ item.action }}</strong><small>{{ item.detail }}</small></td>
+            <td>{{ item.actor.name }} <small>{{ item.actor.id }}</small></td>
+            <td><span class="badge muted">{{ item.category }}</span></td>
+            <td><span class="badge {% if item.status == 'success' %}safe{% else %}danger{% endif %}">{{ item.status }}</span></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="5"><div class="empty-state"><strong>아직 감사 로그가 없습니다.</strong><p>학생, 급식, AI 작업이 실행되면 기록됩니다.</p></div></td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

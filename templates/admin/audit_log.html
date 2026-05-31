@@ -1,0 +1,63 @@
+{% extends "base_admin.html" %}
+{% block eyebrow %}AUDIT TRAIL{% endblock %}
+{% block page_actions %}
+  <a class="btn btn-outline" href="{{ url_for('system_status_page') }}">시스템 상태</a>
+  <button class="btn btn-primary" type="button" onclick="location.reload()">새로고침</button>
+{% endblock %}
+{% block content %}
+<section class="stat-grid">
+  <article class="stat-card with-icon"><span class="stat-icon">AL</span><span>전체 기록</span><strong>{{ audit_summary.total }}</strong><small>최근 감사 로그</small><div class="mini-bars mint"></div></article>
+  <article class="stat-card danger with-icon"><span class="stat-icon">!</span><span>실패 기록</span><strong>{{ audit_summary.failed }}</strong><small>확인 필요</small><div class="mini-bars red"></div></article>
+  <article class="stat-card ai with-icon"><span class="stat-icon">AI</span><span>AI 실행</span><strong>{{ audit_summary.ai }}</strong><small>분석/브리핑/점검</small><div class="mini-bars blue"></div></article>
+  <article class="stat-card info with-icon"><span class="stat-icon">DB</span><span>데이터 변경</span><strong>{{ audit_summary.data }}</strong><small>학생/급식 변경</small><div class="mini-bars amber"></div></article>
+</section>
+
+<section class="panel">
+  <div class="panel-title">
+    <div><h2>감사 로그 필터</h2><p>분류와 처리 상태별로 관리자 작업 이력을 확인합니다.</p></div>
+  </div>
+  <form class="toolbar" method="get" action="{{ url_for('audit_log_page') }}">
+    <select class="search-input" name="category">
+      <option value="">전체 분류</option>
+      {% for category in audit_categories %}
+      <option value="{{ category }}" {% if audit_category == category %}selected{% endif %}>{{ category }}</option>
+      {% endfor %}
+    </select>
+    <select class="search-input" name="status">
+      <option value="">전체 상태</option>
+      <option value="success" {% if audit_status == 'success' %}selected{% endif %}>success</option>
+      <option value="failed" {% if audit_status == 'failed' %}selected{% endif %}>failed</option>
+    </select>
+    <button class="btn btn-light" type="submit">필터 적용</button>
+    <a class="btn btn-ghost" href="{{ url_for('audit_log_page') }}">초기화</a>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="panel-title">
+    <div><h2>관리자 작업 이력</h2><p>누가, 언제, 어떤 작업을 실행했는지 추적합니다.</p></div>
+    <span class="badge muted">{{ audit_logs|length }}건</span>
+  </div>
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>시간</th><th>작업</th><th>담당자</th><th>분류</th><th>요청</th><th>상태</th></tr></thead>
+      <tbody>
+        {% if audit_logs %}
+          {% for item in audit_logs %}
+          <tr class="{% if item.status == 'failed' %}row-danger{% endif %}">
+            <td>{{ item.time }}</td>
+            <td><strong>{{ item.action }}</strong><small>{{ item.detail }}</small></td>
+            <td>{{ item.actor.name }}<small>{{ item.actor.id }} · {{ item.actor.role }}</small></td>
+            <td><span class="badge {% if item.category == 'AI' %}ai{% elif item.category == '휴지통' %}warn{% else %}muted{% endif %}">{{ item.category }}</span></td>
+            <td><strong>{{ item.method }}</strong><small>{{ item.path }} · {{ item.ip }}</small></td>
+            <td><span class="badge {% if item.status == 'success' %}safe{% else %}danger{% endif %}">{{ item.status }} {{ item.status_code }}</span></td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="6"><div class="empty-state"><strong>표시할 감사 로그가 없습니다.</strong><p>학생 추가, 급식 수정, AI 실행, 설정 변경이 발생하면 이곳에 기록됩니다.</p></div></td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -17,6 +17,8 @@
     .nav-parent.has-tag .chevron{margin-left:0}
     .nav-section+.nav-group{margin-top:2px}
     .nav-children .nav-link{padding-left:14px}
+    .workflow-list>a{border:1px solid var(--line-soft);border-radius:8px;padding:18px;background:#fff;display:block}
+    body:not(.light-mode).admin-v5 .workflow-list>a{background:var(--card)}
   </style>
 </head>
 <body class="admin-v5 light-mode">
@@ -70,7 +72,10 @@
           <button class="nav-parent has-tag" type="button" data-nav-toggle aria-expanded="{% if active_tab in ['meal_ai', 'ai_tools'] %}true{% else %}false{% endif %}"><svg><use href="#i-shield"></use></svg><span>AI Tools</span><span class="nav-tag new">New</span><svg class="chevron"><use href="#i-chevron"></use></svg></button>
           <div class="nav-children">
             <a class="nav-link {% if active_tab == 'meal_ai' %}active{% endif %}" href="{{ url_for('meal_upload_page') }}"><span class="nav-bullet"></span>AI급식추가</a>
-            <a class="nav-link {% if active_tab == 'ai_tools' %}active{% endif %}" href="{{ url_for('ai_tools_page') }}"><span class="nav-bullet"></span>AI안전도우미</a>
+            <a class="nav-link {% if request.path == url_for('ai_tools_page') %}active{% endif %}" href="{{ url_for('ai_tools_page') }}"><span class="nav-bullet"></span>AI 안전상황실</a>
+            <a class="nav-link {% if request.path == url_for('ai_tools_daily_brief_page') %}active{% endif %}" href="{{ url_for('ai_tools_daily_brief_page') }}"><span class="nav-bullet"></span>오늘 위험 브리핑</a>
+            <a class="nav-link {% if request.path == url_for('ai_tools_student_plan_page') %}active{% endif %}" href="{{ url_for('ai_tools_student_plan_page') }}"><span class="nav-bullet"></span>학생별 안전계획</a>
+            <a class="nav-link {% if request.path == url_for('ai_tools_menu_review_page') %}active{% endif %}" href="{{ url_for('ai_tools_menu_review_page') }}"><span class="nav-bullet"></span>메뉴 코드 점검</a>
           </div>
         </section>
 

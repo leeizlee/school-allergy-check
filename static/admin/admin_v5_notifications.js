@@ -82,6 +82,15 @@
     </a>`;
   }
 
+  async function readJsonResponse(res) {
+    const contentType = res.headers && res.headers.get ? res.headers.get("content-type") || "" : "";
+    if (!contentType.includes("application/json")) {
+      await res.text().catch(() => "");
+      throw new Error("서버가 JSON이 아닌 응답을 반환했습니다.");
+    }
+    return res.json();
+  }
+
   function renderNotifications() {
     const list = document.getElementById("notificationList") || document.querySelector(".notification-list");
     if (!list) return;
@@ -167,8 +176,9 @@
   async function refreshServerNotifications() {
     try {
       const res = await fetch("/api/admin/notifications", { cache: "no-store" });
-      const data = await res.json();
-      if (!res.ok || !data.ok) return;
+      if (!res.ok) return;
+      const data = await readJsonResponse(res);
+      if (!data.ok) return;
       window.__adminServerNotifications = data.notifications || [];
       renderNotifications();
       refreshBadges();
@@ -185,8 +195,12 @@
     for (const job of jobs) {
       try {
         const res = await fetch(job.status_url || `/api/meal/analyze-jobs/${encodeURIComponent(job.job_id)}`, { cache: "no-store" });
-        const data = await res.json();
-        if (!res.ok || !data.ok) {
+        if (!res.ok) {
+          removeAiJob(job.job_id);
+          continue;
+        }
+        const data = await readJsonResponse(res);
+        if (!data.ok) {
           removeAiJob(job.job_id);
           continue;
         }
@@ -254,7 +268,7 @@
     const path = window.location.pathname;
     if (path === "/notifications") setTimeout(() => markTargetRead(), 500);
     else if (path === "/lunch-log") setTimeout(() => markTargetRead("lunch_log"), 500);
-    else if (path === "/admin/meal/upload") setTimeout(() => markTargetRead("meal_ai"), 500);
+    else if (path === "/admin/meal/upload" || path.startsWith("/admin/meal/analyze/result/")) setTimeout(() => markTargetRead("meal_ai"), 500);
     else if (path === "/admin/ai-tools/daily-brief") setTimeout(() => markTargetRead("ai_daily"), 500);
     else if (path === "/admin/ai-tools/student-plan") setTimeout(() => markTargetRead("ai_student"), 500);
     else if (path === "/admin/ai-tools/menu-review") setTimeout(() => markTargetRead("ai_menu"), 500);

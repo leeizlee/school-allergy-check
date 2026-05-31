@@ -30,6 +30,49 @@
     body.sidebar-collapsed .gentelella-nav{display:none!important}
     body.sidebar-collapsed .collapsed-icon-nav{display:grid;gap:7px;justify-items:center;padding:14px 8px 8px}
     body.sidebar-collapsed .sidebar-account{grid-template-columns:1fr;padding:12px 8px;justify-items:center}
+    .topbar-search input{min-width:250px}
+    .topbar-search.search-focus{box-shadow:0 0 0 3px rgba(83,143,237,.16)}
+    #themeToggleBtn{width:auto;min-width:92px;padding:0 12px;gap:7px;white-space:nowrap;font-weight:900}
+    .topbar-avatar,.avatar-button{overflow:hidden}
+    .avatar-img{display:block;width:100%;height:100%;border-radius:inherit;object-fit:cover}
+    .notification-wrap{position:relative}
+    .notification-panel{position:absolute;right:0;top:42px;width:340px;max-width:calc(100vw - 32px);background:#fff;border:1px solid var(--line-soft);border-radius:8px;box-shadow:0 18px 45px rgba(15,23,42,.18);z-index:80;overflow:hidden}
+    .notification-head{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--line-soft);font-weight:900}
+    .notification-list{max-height:360px;overflow:auto}
+    .notification-item{display:grid;grid-template-columns:38px 1fr;gap:11px;padding:13px 15px;border-bottom:1px solid var(--line-soft)}
+    .notification-item:last-child{border-bottom:0}
+    .notification-icon{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:900;color:#fff;background:#5b8def}
+    .notification-icon.safe{background:#47b881}.notification-icon.warn{background:#f0ad4e}.notification-icon.danger{background:#e55353}.notification-icon.ai{background:#7c5cff}
+    .notification-item strong{display:block;font-size:13px}.notification-item p{margin:3px 0 0;color:var(--muted);font-size:12px}.notification-item time{display:block;margin-top:4px;color:var(--muted);font-size:11px}
+    .admin-toast{position:fixed;right:22px;bottom:22px;z-index:120;background:#132033;color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px 14px;box-shadow:0 18px 45px rgba(15,23,42,.22);font-size:13px}
+    .profile-uploader{display:flex;gap:14px;align-items:center;margin:0 0 16px;padding:14px;border:1px solid var(--line-soft);border-radius:8px;background:rgba(85,195,170,.08)}
+    .profile-preview{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:#55c3aa;color:#fff;font-weight:900;font-size:24px;box-shadow:inset 0 0 0 3px rgba(255,255,255,.3)}
+    .profile-preview img{width:100%;height:100%;object-fit:cover}
+    .profile-uploader input{max-width:220px}
+    .profile-uploader small{display:block;color:var(--muted);margin-top:4px}
+    body:not(.light-mode).admin-v5{background:#101724;color:#eef4ff}
+    body:not(.light-mode).admin-v5 .admin-main,
+    body:not(.light-mode).admin-v5 .page{background:#101724;color:#eef4ff}
+    body:not(.light-mode).admin-v5 .topbar{background:#111827;border-color:#283548;color:#eef4ff}
+    body:not(.light-mode).admin-v5 .topbar-search,
+    body:not(.light-mode).admin-v5 .icon-button,
+    body:not(.light-mode).admin-v5 .icon-action,
+    body:not(.light-mode).admin-v5 .docs-button{background:#182235;border-color:#334155;color:#dbe7ff}
+    body:not(.light-mode).admin-v5 .panel,
+    body:not(.light-mode).admin-v5 .stat-card,
+    body:not(.light-mode).admin-v5 .list-row,
+    body:not(.light-mode).admin-v5 .timeline-row,
+    body:not(.light-mode).admin-v5 .empty-state,
+    body:not(.light-mode).admin-v5 .notification-panel{background:#172233;border-color:#334155;color:#eef4ff}
+    body:not(.light-mode).admin-v5 input,
+    body:not(.light-mode).admin-v5 select,
+    body:not(.light-mode).admin-v5 textarea{background:#111827!important;border-color:#334155!important;color:#eef4ff!important}
+    body:not(.light-mode).admin-v5 .data-table th{background:#111827;color:#a8b3c5}
+    body:not(.light-mode).admin-v5 .data-table td{border-color:#2d3b4f}
+    body:not(.light-mode).admin-v5 .modal,
+    body:not(.light-mode).admin-v5 .modal-card{background:#172233!important;color:#eef4ff!important;border-color:#334155!important}
+    body:not(.light-mode).admin-v5 .modal-backdrop{background:rgba(8,13,24,.72)!important;backdrop-filter:blur(3px)}
+    .hidden{display:none!important}
   </style>
 </head>
 <body class="admin-v5 light-mode">
@@ -117,7 +160,7 @@
         {% if rfid_dashboard_url %}<a class="collapsed-icon-link" href="{{ rfid_dashboard_url }}" target="_blank" title="키오스크 열기" aria-label="키오스크 열기"><svg><use href="#i-activity"></use></svg></a>{% endif %}
       </nav>
       <div class="sidebar-account">
-        <button type="button" class="avatar-button" onclick="openMyAccountModal()" title="내 계정">{{ (login_name or '관')[:1] }}</button>
+        <button type="button" class="avatar-button" onclick="openMyAccountModal()" title="내 계정">{% if profile_picture %}<img class="avatar-img" src="{{ profile_picture }}" alt="프로필">{% else %}{{ (login_name or '관')[:1] }}{% endif %}</button>
         <div><strong>{{ login_name or '관리자' }}</strong><small>{{ login_id or 'Admin' }}</small></div>
         <a href="{{ url_for('logout') }}">로그아웃</a>
       </div>
@@ -130,15 +173,32 @@
         </div>
         <div class="topbar-search">
           <svg><use href="#i-search"></use></svg>
-          <input type="search" placeholder="Search pages or run a command">
+          <input id="globalSearchInput" type="search" placeholder="학생검색 또는 메뉴검색">
           <kbd>⌘K</kbd>
         </div>
         <div class="topbar-actions">
-          <button type="button" class="docs-button" title="문서"><svg><use href="#i-book"></use></svg><span>Docs</span></button>
+          <button type="button" class="docs-button" onclick="copyBugReportEmail()" title="오류신고 메일 복사"><svg><use href="#i-book"></use></svg><span>오류신고</span></button>
           <button type="button" class="icon-action" id="themeToggleBtn" onclick="toggleAdminTheme()" title="다크모드"><svg><use href="#i-moon"></use></svg></button>
-          <button type="button" class="icon-action has-dot" title="알림"><svg><use href="#i-bell"></use></svg></button>
+          <span class="notification-wrap">
+            <button type="button" class="icon-action {% if notifications %}has-dot{% endif %}" onclick="toggleNotificationPanel()" title="알림"><svg><use href="#i-bell"></use></svg></button>
+            <div id="notificationPanel" class="notification-panel hidden" role="dialog" aria-label="알림">
+              <div class="notification-head"><span>최근 알림</span><small>{{ notifications|length }}개</small></div>
+              <div class="notification-list">
+                {% if notifications %}
+                  {% for item in notifications %}
+                  <div class="notification-item">
+                    <span class="notification-icon {{ item.kind }}">{{ item.icon }}</span>
+                    <div><strong>{{ item.title }}</strong><p>{{ item.detail }}</p><time>{{ item.time }}</time></div>
+                  </div>
+                  {% endfor %}
+                {% else %}
+                  <div class="empty-state"><strong>표시할 알림이 없습니다.</strong><p>RFID 인식, 학생/메뉴 등록 기록이 생기면 이곳에 표시됩니다.</p></div>
+                {% endif %}
+              </div>
+            </div>
+          </span>
           <button type="button" class="icon-action" title="메시지"><svg><use href="#i-mail"></use></svg></button>
-          <button type="button" class="topbar-avatar" onclick="openMyAccountModal()" title="내 계정">{{ (login_name or '관')[:1] }}</button>
+          <button type="button" class="topbar-avatar" onclick="openMyAccountModal()" title="내 계정">{% if profile_picture %}<img class="avatar-img" src="{{ profile_picture }}" alt="프로필">{% else %}{{ (login_name or '관')[:1] }}{% endif %}</button>
         </div>
       </header>
       <main class="page"><div class="page-heading"><div><div class="breadcrumb">관리자 / {{ title|default('관리자') }}</div><div class="eyebrow">{% block eyebrow %}OVERVIEW{% endblock %}</div><h1>{{ title|default('관리자') }}</h1><p>{{ subtitle|default('') }}</p></div><div class="page-actions">{% block page_actions %}{% endblock %}</div></div>{% block content %}{% endblock %}</main>
@@ -161,5 +221,183 @@
     });
   </script>
   {{ legacy_admin_tail|default('')|safe }}
+  <script>
+    (function () {
+      const bugReportEmail = "m4nj_un@naver.com";
+      const profilePicture = {{ (profile_picture|default(''))|tojson }};
+      const currentTab = {{ (active_tab|default(''))|tojson }};
+
+      function showToast(message) {
+        const old = document.querySelector(".admin-toast");
+        if (old) old.remove();
+        const toast = document.createElement("div");
+        toast.className = "admin-toast";
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(function () { toast.remove(); }, 2400);
+      }
+
+      window.copyBugReportEmail = async function () {
+        try {
+          await navigator.clipboard.writeText(bugReportEmail);
+          showToast("오류신고 메일이 복사됐어: " + bugReportEmail);
+        } catch (err) {
+          window.prompt("오류신고 메일 주소", bugReportEmail);
+        }
+      };
+
+      window.toggleNotificationPanel = function () {
+        document.getElementById("notificationPanel")?.classList.toggle("hidden");
+      };
+
+      document.addEventListener("click", function (event) {
+        const panel = document.getElementById("notificationPanel");
+        if (!panel || panel.classList.contains("hidden")) return;
+        if (!event.target.closest(".notification-wrap")) panel.classList.add("hidden");
+      });
+
+      function applyMenuSearch(query) {
+        const q = String(query || "").trim().toLowerCase();
+        const rows = Array.from(document.querySelectorAll(".menu-item-row"));
+        const groupRows = Array.from(document.querySelectorAll(".group-row"));
+        rows.forEach(function (row) {
+          row.style.display = !q || row.textContent.toLowerCase().includes(q) ? "" : "none";
+        });
+        groupRows.forEach(function (group) {
+          let next = group.nextElementSibling;
+          let hasVisible = false;
+          while (next && !next.classList.contains("group-row")) {
+            if (next.classList.contains("menu-item-row") && next.style.display !== "none") hasVisible = true;
+            next = next.nextElementSibling;
+          }
+          group.style.display = !q || hasVisible || group.textContent.toLowerCase().includes(q) ? "" : "none";
+        });
+      }
+
+      function runGlobalSearch(query) {
+        const q = String(query || "").trim();
+        if (!q) return;
+        const studentInput = document.getElementById("studentSearchInput");
+        if (currentTab === "student_manage" && studentInput) {
+          studentInput.value = q;
+          if (typeof window.filterStudentRows === "function") window.filterStudentRows();
+          studentInput.dispatchEvent(new Event("input", { bubbles: true }));
+          return;
+        }
+        if (currentTab === "menu_manage") {
+          applyMenuSearch(q);
+          return;
+        }
+        const target = q.includes("급식") || q.includes("메뉴") ? "{{ url_for('menu_manage_page') }}" : "{{ url_for('student_manage_page') }}";
+        window.location.href = target + "?q=" + encodeURIComponent(q);
+      }
+
+      function initGlobalSearch() {
+        const input = document.getElementById("globalSearchInput");
+        if (!input) return;
+        const params = new URLSearchParams(window.location.search);
+        const q = params.get("q") || "";
+        if (q) {
+          input.value = q;
+          setTimeout(function () { runGlobalSearch(q); }, 50);
+        }
+        input.addEventListener("keydown", function (event) {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            runGlobalSearch(input.value);
+          }
+        });
+        input.addEventListener("focus", function () { input.closest(".topbar-search")?.classList.add("search-focus"); });
+        input.addEventListener("blur", function () { input.closest(".topbar-search")?.classList.remove("search-focus"); });
+      }
+
+      function setThemeButton() {
+        const btn = document.getElementById("themeToggleBtn");
+        if (!btn) return;
+        const isLight = document.body.classList.contains("light-mode");
+        btn.innerHTML = '<svg><use href="#i-moon"></use></svg><span>' + (isLight ? "다크모드" : "라이트모드") + "</span>";
+        btn.title = isLight ? "다크모드" : "라이트모드";
+      }
+
+      function wrapThemeToggle() {
+        const original = window.toggleAdminTheme;
+        window.toggleAdminTheme = function () {
+          if (typeof original === "function") original();
+          setThemeButton();
+        };
+        setThemeButton();
+      }
+
+      function currentAvatarMarkup() {
+        if (profilePicture) return '<img src="' + profilePicture + '" alt="프로필">';
+        return {{ ((login_name or '관')[:1])|tojson }};
+      }
+
+      function enhanceAccountModal() {
+        const modal = document.getElementById("myAccountModal");
+        if (!modal || modal.querySelector("#profilePictureInput")) return;
+        const formAnchor = modal.querySelector("input, .field-stack, .modal-card, .modal");
+        if (!formAnchor) return;
+        const box = document.createElement("div");
+        box.className = "profile-uploader";
+        box.innerHTML = ''
+          + '<div class="profile-preview" id="profilePicturePreview">' + currentAvatarMarkup() + '</div>'
+          + '<div><strong>프로필 사진</strong><small>정사각형으로 자동 자르고 원형 아바타에 맞게 저장합니다.</small>'
+          + '<input id="profilePictureInput" type="file" accept="image/*">'
+          + '<div class="button-row" style="margin-top:8px"><button class="btn btn-light" type="button" id="profilePictureSaveBtn">사진 저장</button></div>'
+          + '<small id="profilePictureStatus"></small></div>';
+        const parent = formAnchor.closest(".modal-card, .modal") || modal;
+        parent.insertBefore(box, parent.firstChild);
+
+        const input = box.querySelector("#profilePictureInput");
+        const preview = box.querySelector("#profilePicturePreview");
+        const status = box.querySelector("#profilePictureStatus");
+        input.addEventListener("change", function () {
+          const file = input.files && input.files[0];
+          if (!file) return;
+          const url = URL.createObjectURL(file);
+          preview.innerHTML = '<img src="' + url + '" alt="프로필 미리보기">';
+          status.textContent = "미리보기 완료. 저장을 누르면 자동으로 정사각형 편집돼.";
+        });
+        box.querySelector("#profilePictureSaveBtn").addEventListener("click", async function () {
+          const file = input.files && input.files[0];
+          if (!file) {
+            status.textContent = "먼저 사진을 선택해줘.";
+            return;
+          }
+          const body = new FormData();
+          body.append("picture", file);
+          status.textContent = "프로필 사진 저장 중...";
+          try {
+            const res = await fetch("/api/my-account/picture", { method: "POST", body });
+            const contentType = res.headers.get("content-type") || "";
+            const data = contentType.includes("application/json") ? await res.json() : { ok: false, error: await res.text() };
+            if (!res.ok || !data.ok) throw new Error(data.error || "프로필 사진 저장 실패");
+            document.querySelectorAll(".avatar-img").forEach(function (img) { img.src = data.picture; });
+            document.querySelectorAll(".topbar-avatar,.avatar-button").forEach(function (button) {
+              button.innerHTML = '<img class="avatar-img" src="' + data.picture + '" alt="프로필">';
+            });
+            preview.innerHTML = '<img src="' + data.picture + '" alt="프로필">';
+            status.textContent = "프로필 사진이 저장됐어.";
+            showToast("프로필 사진 저장 완료");
+          } catch (err) {
+            status.textContent = err.message || "프로필 사진 저장 실패";
+          }
+        });
+      }
+
+      const originalOpenAccountModal = window.openMyAccountModal;
+      window.openMyAccountModal = function () {
+        if (typeof originalOpenAccountModal === "function") originalOpenAccountModal();
+        enhanceAccountModal();
+      };
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initGlobalSearch();
+        setTimeout(wrapThemeToggle, 0);
+        setTimeout(enhanceAccountModal, 0);
+      });
+    })();
+  </script>
 </body>
 </html>

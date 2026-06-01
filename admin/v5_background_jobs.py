@@ -43,6 +43,7 @@ _RETRYABLE_MARKERS = (
     "제한",
     "잠시 후",
 )
+_MEAL_SAVE_ROLES = {"a", "admin", "super", "superadmin", "n", "nutritionist", "dietitian", "영양사"}
 
 
 def _now_label():
@@ -56,6 +57,10 @@ def _now_iso():
 def _safe_text(value, default=""):
     text = legacy.safe_str(value).strip()
     return text if text else default
+
+
+def _role_key():
+    return legacy.safe_str(session.get("role")).strip().lower()
 
 
 def _is_retryable_error(exc):
@@ -349,6 +354,8 @@ def api_meal_save_async():
     ok, response = legacy.require_admin_api()
     if not ok:
         return response
+    if _role_key() not in _MEAL_SAVE_ROLES:
+        return jsonify({"ok": False, "error": "현재 계정 권한으로는 급식 저장 작업을 실행할 수 없어."}), 403
     created_by = _safe_text(request.form.get("created_by"), session.get("login_name", legacy.DEFAULT_ADMIN_NAME))
     try:
         analysis = legacy.parse_preview_form(request.form)

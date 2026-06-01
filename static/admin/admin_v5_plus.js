@@ -103,6 +103,7 @@
   function applyStudentFilters() {
     const active = document.querySelector(".js-student-filter.active")?.dataset.filter || "all";
     const query = (document.getElementById("studentSearchInput")?.value || "").trim().toLowerCase();
+    let visibleCount = 0;
 
     document.querySelectorAll(".student-data-row").forEach((row) => {
       const hasAllergy = row.dataset.hasAllergy === "1";
@@ -114,10 +115,15 @@
         (active === "rfid" && hasRfid) ||
         (active === "no-rfid" && !hasRfid);
       const matchesQuery = !query || (row.dataset.search || "").includes(query);
+      const isVisible = matchesState && matchesQuery;
 
       row.style.display = "";
-      row.hidden = !(matchesState && matchesQuery);
+      row.hidden = !isVisible;
+      if (isVisible) visibleCount += 1;
     });
+
+    const counter = document.getElementById("studentResultCount");
+    if (counter) counter.textContent = String(visibleCount);
   }
 
   function installStudentFilters() {

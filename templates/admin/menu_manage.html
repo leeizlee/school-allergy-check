@@ -5,6 +5,7 @@
 {% endblock %}
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='admin/admin_ui_polish.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin/admin_theme_fix.css') }}">
 <section class="stat-grid">
   <article class="stat-card with-icon"><span class="stat-icon">TD</span><span>오늘 급식</span><strong>{{ menu_insights.today_count }}</strong><small>오늘 등록 메뉴</small><div class="mini-bars mint"></div></article>
   <article class="stat-card info with-icon"><span class="stat-icon">WK</span><span>이번 주 급식</span><strong>{{ menu_insights.week_count }}</strong><small>최근 7일 등록</small><div class="mini-bars blue"></div></article>

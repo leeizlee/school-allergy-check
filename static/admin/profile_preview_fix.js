@@ -4,6 +4,7 @@
 
   function qs(selector, root) { return (root || document).querySelector(selector); }
   function qsa(selector, root) { return Array.from((root || document).querySelectorAll(selector)); }
+  function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 
   function extensionOf(file) {
     var name = String((file && file.name) || "").toLowerCase();
@@ -61,23 +62,26 @@
   function ensureEditor() {
     var old = qs("#profileCropEditor");
     if (old) return old;
+
     var modal = document.createElement("div");
     modal.id = "profileCropEditor";
     modal.className = "modal-backdrop profile-crop-editor hidden";
     modal.innerHTML = ''
       + '<section class="modal-card profile-crop-card">'
       + '  <div class="modal-header">'
-      + '    <div><h2>프로필 사진 편집</h2><p>사진을 드래그해서 위치를 맞추고 확대/회전한 뒤 저장해.</p></div>'
+      + '    <div><h2>프로필 사진 편집</h2><p>원 크기와 위치를 조정한 뒤 저장해.</p></div>'
       + '    <button class="btn btn-light" type="button" data-profile-crop-close>×</button>'
       + '  </div>'
       + '  <div class="profile-crop-grid">'
       + '    <div class="profile-crop-stage"><canvas id="profileCropCanvas" width="320" height="320"></canvas><div class="profile-crop-ring"></div></div>'
       + '    <div class="profile-crop-controls">'
-      + '      <div class="profile-crop-live"><span id="profileCropLive" class="profile-preview">관</span><div><strong>원형 미리보기</strong><small>저장하면 관리자 아바타에 바로 반영돼.</small></div></div>'
-      + '      <label class="profile-crop-label">확대/축소<input id="profileCropZoom" type="range" min="0.6" max="3" step="0.01" value="1"></label>'
-      + '      <div class="button-row"><button class="btn btn-light" type="button" data-profile-rotate-left>왼쪽 회전</button><button class="btn btn-light" type="button" data-profile-rotate-right>오른쪽 회전</button></div>'
+      + '      <div class="profile-crop-live"><span id="profileCropLive" class="profile-preview">관</span><div><strong>원형 미리보기</strong><small>저장하면 관리자 아바타에 바로 반영됩니다.</small></div></div>'
+      + '      <label class="profile-crop-label">사진 확대/축소<input id="profileCropZoom" type="range" min="0.6" max="3" step="0.01" value="1"></label>'
+      + '      <label class="profile-crop-label">큰 원 크기<input id="profileCropRing" type="range" min="0.58" max="0.94" step="0.01" value="0.79"></label>'
+      + '      <label class="profile-crop-label">미리보기 원 크기<input id="profileCropLiveSize" type="range" min="56" max="112" step="1" value="76"></label>'
+      + '      <div class="button-row"><button class="btn btn-light" type="button" data-profile-center>가운데 정렬</button><button class="btn btn-light" type="button" data-profile-rotate-left>왼쪽 회전</button><button class="btn btn-light" type="button" data-profile-rotate-right>오른쪽 회전</button></div>'
       + '      <div class="button-row"><button class="btn btn-light" type="button" data-profile-crop-cancel>취소</button><button class="btn btn-primary" type="button" data-profile-crop-save>사진 저장</button></div>'
-      + '      <small id="profileCropStatus">사진을 드래그해서 위치를 조정할 수 있어.</small>'
+      + '      <small id="profileCropStatus">드래그로 위치를 맞추고, 틀어지면 가운데 정렬을 눌러줘.</small>'
       + '    </div>'
       + '  </div>'
       + '</section>';
@@ -86,40 +90,88 @@
     var style = document.createElement("style");
     style.textContent = ''
       + '.profile-crop-editor.hidden{display:none!important}'
-      + '.profile-crop-card{width:min(760px,calc(100vw - 48px))!important;padding:0!important;overflow:hidden!important}'
+      + '.profile-crop-card{width:min(780px,calc(100vw - 48px))!important;padding:0!important;overflow:hidden!important}'
       + '.profile-crop-card .modal-header{padding:18px 22px;border-bottom:1px solid var(--fix-line,#dde4ee)}'
-      + '.profile-crop-grid{display:grid;grid-template-columns:minmax(280px,1fr) minmax(260px,.9fr);gap:20px;padding:22px}'
+      + '.profile-crop-grid{display:grid;grid-template-columns:minmax(280px,1fr) minmax(270px,.92fr);gap:20px;padding:22px}'
       + '.profile-crop-stage{position:relative;width:320px;height:320px;max-width:100%;margin:auto;border-radius:12px;background:#0b101a;overflow:hidden;touch-action:none;cursor:grab}'
       + '.profile-crop-stage:active{cursor:grabbing}'
       + '#profileCropCanvas{display:block;width:100%;height:100%}'
-      + '.profile-crop-ring{pointer-events:none;position:absolute;inset:34px;border:2px solid rgba(255,255,255,.88);border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.28)}'
+      + '.profile-crop-ring{pointer-events:none;position:absolute;inset:34px;border:2px solid rgba(255,255,255,.90);border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.28)}'
+      + '.profile-crop-ring:before,.profile-crop-ring:after{content:"";position:absolute;background:rgba(255,255,255,.32)}'
+      + '.profile-crop-ring:before{left:50%;top:0;bottom:0;width:1px}.profile-crop-ring:after{top:50%;left:0;right:0;height:1px}'
       + '.profile-crop-controls{display:grid;align-content:start;gap:14px}'
       + '.profile-crop-live{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;padding:13px;border:1px solid var(--fix-line,#dde4ee);border-radius:10px;background:var(--fix-card-soft,#f8fafc)}'
       + '.profile-crop-label{display:grid;gap:7px;font-size:13px;font-weight:900;color:var(--fix-muted,#667085)}'
-      + '#profileCropZoom{width:100%}'
-      + '@media(max-width:760px){.profile-crop-grid{grid-template-columns:1fr}.profile-crop-stage{width:280px;height:280px}.profile-crop-ring{inset:30px}}';
+      + '#profileCropZoom,#profileCropRing,#profileCropLiveSize{width:100%}'
+      + '@media(max-width:760px){.profile-crop-grid{grid-template-columns:1fr}.profile-crop-stage{width:280px;height:280px}}';
     document.head.appendChild(style);
     return modal;
   }
 
-  function drawTo(canvas, outSize) {
+  function ringSize() {
+    var view = state && state.viewSize ? state.viewSize : 320;
+    var ratio = state && state.ringRatio ? state.ringRatio : 0.79;
+    return view * ratio;
+  }
+
+  function updateRingAndLive() {
+    if (!state) return;
+    var ring = qs(".profile-crop-ring");
+    if (ring) {
+      var inset = Math.max(10, (state.viewSize - ringSize()) / 2);
+      ring.style.inset = inset + "px";
+    }
+    var live = qs("#profileCropLive");
+    if (live) {
+      live.style.width = state.liveSize + "px";
+      live.style.height = state.liveSize + "px";
+    }
+  }
+
+  function drawImageTransform(ctx, size, scaleBase) {
+    var img = state.image;
+    var view = state.viewSize || 320;
+    var fit = Math.max(view / img.naturalWidth, view / img.naturalHeight);
+    ctx.translate(size / 2 + state.x * scaleBase, size / 2 + state.y * scaleBase);
+    ctx.rotate(state.rotate * Math.PI / 180);
+    ctx.scale(fit * state.zoom * scaleBase, fit * state.zoom * scaleBase);
+    ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+  }
+
+  function drawStageTo(canvas, outSize) {
     if (!state || !state.image || !canvas) return;
     var ctx = canvas.getContext("2d");
     var size = outSize || canvas.width;
     canvas.width = size;
     canvas.height = size;
-    var vw = state.viewSize || 320;
-    var factor = size / vw;
-    var img = state.image;
-    var fit = Math.max(vw / img.naturalWidth, vw / img.naturalHeight);
+    var scaleBase = size / (state.viewSize || 320);
     ctx.clearRect(0, 0, size, size);
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, size, size);
     ctx.save();
-    ctx.translate(size / 2 + state.x * factor, size / 2 + state.y * factor);
-    ctx.rotate(state.rotate * Math.PI / 180);
-    ctx.scale(fit * state.zoom * factor, fit * state.zoom * factor);
-    ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+    drawImageTransform(ctx, size, scaleBase);
+    ctx.restore();
+  }
+
+  function drawCropTo(canvas, outSize) {
+    if (!state || !state.image || !canvas) return;
+    var ctx = canvas.getContext("2d");
+    var size = outSize || canvas.width;
+    var view = state.viewSize || 320;
+    var crop = ringSize();
+    var scaleBase = size / crop;
+    canvas.width = size;
+    canvas.height = size;
+    ctx.clearRect(0, 0, size, size);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+    ctx.save();
+    ctx.translate(size / 2, size / 2);
+    ctx.scale(view / crop, view / crop);
+    ctx.translate(-view / 2, -view / 2);
+    ctx.restore();
+    ctx.save();
+    drawImageTransform(ctx, size, scaleBase);
     ctx.restore();
   }
 
@@ -131,9 +183,10 @@
     state.viewSize = size;
     canvas.style.width = size + "px";
     canvas.style.height = size + "px";
-    drawTo(canvas, size);
+    updateRingAndLive();
+    drawStageTo(canvas, size);
     var temp = document.createElement("canvas");
-    drawTo(temp, 160);
+    drawCropTo(temp, 160);
     setImage(qs("#profileCropLive"), temp.toDataURL("image/png"));
   }
 
@@ -141,15 +194,15 @@
     var editor = ensureEditor();
     var img = new Image();
     img.onload = function () {
-      state = { image: img, input: input, status: status, x: 0, y: 0, zoom: 1, rotate: 0, dragging: false, lastX: 0, lastY: 0 };
+      state = { image: img, input: input, status: status, x: 0, y: 0, zoom: 1, rotate: 0, ringRatio: 0.79, liveSize: 76, dragging: false, lastX: 0, lastY: 0, viewSize: 320 };
       qs("#profileCropZoom").value = "1";
+      qs("#profileCropRing").value = String(state.ringRatio);
+      qs("#profileCropLiveSize").value = String(state.liveSize);
       editor.classList.remove("hidden");
       draw();
-      setStatus(status, "편집 화면에서 위치를 맞춘 뒤 사진 저장을 눌러줘.", true);
+      setStatus(status, "편집 화면에서 원 크기와 위치를 맞춘 뒤 사진 저장을 눌러줘.", true);
     };
-    img.onerror = function () {
-      setStatus(status, "이미지를 읽지 못했어. 다른 파일로 시도해줘.", false);
-    };
+    img.onerror = function () { setStatus(status, "이미지를 읽지 못했어. 다른 파일로 시도해줘.", false); };
     img.src = src;
   }
 
@@ -163,28 +216,17 @@
     var root = rootOf(input);
     var preview = findPreview(root);
     var status = findStatus(root, input);
-    if (!file) {
-      setStatus(status, "사진 파일을 선택해줘.", false);
-      return;
-    }
-    if (!isAllowedImage(file)) {
-      setStatus(status, "PNG, JPG, JPEG, JPE, WEBP, GIF 이미지만 사용할 수 있어.", false);
-      return;
-    }
+    if (!file) { setStatus(status, "사진 파일을 선택해줘.", false); return; }
+    if (!isAllowedImage(file)) { setStatus(status, "PNG, JPG, JPEG, JPE, WEBP, GIF 이미지만 사용할 수 있어.", false); return; }
     var reader = new FileReader();
     reader.onload = function () {
       var src = String(reader.result || "");
-      if (!src) {
-        setStatus(status, "이미지를 읽지 못했어. 다른 파일로 시도해줘.", false);
-        return;
-      }
+      if (!src) { setStatus(status, "이미지를 읽지 못했어. 다른 파일로 시도해줘.", false); return; }
       setImage(preview, src);
       window.__profilePreviewDataUrl = src;
       openEditor(src, input, status);
     };
-    reader.onerror = function () {
-      setStatus(status, "이미지를 읽지 못했어. 다른 파일로 시도해줘.", false);
-    };
+    reader.onerror = function () { setStatus(status, "이미지를 읽지 못했어. 다른 파일로 시도해줘.", false); };
     reader.readAsDataURL(file);
   }
 
@@ -193,12 +235,9 @@
     var status = qs("#profileCropStatus") || state.status;
     setStatus(status, "프로필 사진 저장 중...", true);
     var out = document.createElement("canvas");
-    drawTo(out, 512);
+    drawCropTo(out, 512);
     out.toBlob(function (blob) {
-      if (!blob) {
-        setStatus(status, "이미지 저장용 파일을 만들지 못했어.", false);
-        return;
-      }
+      if (!blob) { setStatus(status, "이미지 저장용 파일을 만들지 못했어.", false); return; }
       var body = new FormData();
       body.append("picture", blob, "profile-crop.png");
       fetch("/api/my-account/picture", { method: "POST", body: body })
@@ -227,6 +266,7 @@
 
   document.addEventListener("click", function (event) {
     if (event.target.closest("[data-profile-crop-close],[data-profile-crop-cancel]")) closeEditor();
+    if (event.target.closest("[data-profile-center]")) { if (state) { state.x = 0; state.y = 0; draw(); setStatus(qs("#profileCropStatus"), "사진 위치를 가운데로 맞췄어.", true); } }
     if (event.target.closest("[data-profile-rotate-left]")) { if (state) { state.rotate -= 90; draw(); } }
     if (event.target.closest("[data-profile-rotate-right]")) { if (state) { state.rotate += 90; draw(); } }
     if (event.target.closest("[data-profile-crop-save]")) { event.preventDefault(); uploadCropped(); }
@@ -244,10 +284,10 @@
   }, true);
 
   document.addEventListener("input", function (event) {
-    if (event.target && event.target.id === "profileCropZoom" && state) {
-      state.zoom = parseFloat(event.target.value || "1") || 1;
-      draw();
-    }
+    if (!state || !event.target) return;
+    if (event.target.id === "profileCropZoom") { state.zoom = clamp(parseFloat(event.target.value || "1") || 1, 0.6, 3); draw(); }
+    if (event.target.id === "profileCropRing") { state.ringRatio = clamp(parseFloat(event.target.value || "0.79") || 0.79, 0.58, 0.94); draw(); }
+    if (event.target.id === "profileCropLiveSize") { state.liveSize = clamp(parseFloat(event.target.value || "76") || 76, 56, 112); draw(); }
   });
 
   document.addEventListener("pointerdown", function (event) {
@@ -274,7 +314,7 @@
     var stage = event.target.closest && event.target.closest(".profile-crop-stage");
     if (!stage || !state) return;
     event.preventDefault();
-    state.zoom = Math.max(0.6, Math.min(3, state.zoom + (event.deltaY < 0 ? 0.06 : -0.06)));
+    state.zoom = clamp(state.zoom + (event.deltaY < 0 ? 0.06 : -0.06), 0.6, 3);
     var slider = qs("#profileCropZoom");
     if (slider) slider.value = String(state.zoom);
     draw();

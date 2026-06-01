@@ -11,6 +11,7 @@
 {% endblock %}
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='admin/admin_v5_refine.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin/admin_ui_polish.css') }}">
 <div class="student-page product-page">
   <section class="student-hero">
     <div>
@@ -170,79 +171,57 @@
       </div>
     </div>
 
-    <div class="data-table-wrap student-table-wrap">
-      <table class="data-table student-table">
-        <thead>
-          <tr>
-            <th class="checkbox-cell hidden" id="studentCheckboxHeader"></th>
-            <th>학생</th>
-            <th>학적 정보</th>
-            <th>RFID</th>
-            <th>알레르기</th>
-            <th>등록 정보</th>
-            <th class="actions-cell">관리</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% if student_rows %}
-            {% for row in student_rows %}
-              <tr class="student-data-row" data-has-allergy="{% if row.allergy_names and row.allergy_names != '없음' %}1{% else %}0{% endif %}" data-has-rfid="{% if row.rfid_id %}1{% else %}0{% endif %}" data-search="{{ ((row.rfid_id or '') ~ ' ' ~ (row.name or '') ~ ' ' ~ (row.student_number or '') ~ ' ' ~ (row.allergy_names or '') ~ ' ' ~ (row.class_label or '') ~ ' ' ~ (row.student_label or ''))|lower }}">
-                <td class="checkbox-cell hidden student-checkbox-cell"><input type="checkbox" class="student-row-checkbox" value="{{ row.row_index }}"></td>
-                <td>
-                  <div class="student-person">
-                    <span class="row-avatar avatar-tone-{{ loop.index0 % 6 }}">{{ (row.name or '?')[:1] }}</span>
-                    <div>
-                      <strong>{{ row.name or '-' }}</strong>
-                      <small>{{ row.student_number or '-' }}</small>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <span class="badge info">{{ row.grade or '-' }}학년 {{ row.class_no or '-' }}반</span>
-                  <span class="badge muted">{{ row.number or '-' }}번</span>
-                </td>
-                <td>
-                  {% if row.rfid_id %}
-                    <span class="badge safe">등록</span>
-                    <small>{{ row.rfid_id }}</small>
-                  {% else %}
-                    <span class="badge warn">미등록</span>
-                    <small>카드 연결 필요</small>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if row.allergy_names and row.allergy_names != '없음' %}
-                    <span class="badge danger">보유</span>
-                    <small><span class="allergy-chip">{{ row.allergy_names }}</span></small>
-                  {% else %}
-                    <span class="badge safe">없음</span>
-                    <small>등록된 알레르기 없음</small>
-                  {% endif %}
-                </td>
-                <td>
-                  <strong>{{ row.created_by or '-' }}</strong>
-                  <small>{{ row.created_at or '-' }}</small>
-                </td>
-                <td class="actions-cell">
-                  <button class="btn btn-light row-action-button" type="button" onclick='openStudentEditModal({{ row.row_index }}, {{ row.rfid_id|tojson }}, {{ row.name|tojson }}, {{ row.student_number|tojson }}, {{ row.allergy_codes|tojson }})'>수정</button>
-                </td>
-              </tr>
-            {% endfor %}
-          {% else %}
-            <tr>
-              <td colspan="7">
-                <div class="empty-state student-empty-state">
-                  <span class="empty-state-icon"><svg><use href="#i-users"></use></svg></span>
-                  <strong>조건에 맞는 학생이 없습니다.</strong>
-                  <p>검색어 또는 필터를 변경해 보세요.</p>
-                  <button class="btn btn-primary" type="button" onclick="openStudentModal()">학생 추가</button>
-                </div>
-              </td>
-            </tr>
-          {% endif %}
-        </tbody>
-      </table>
+    <span class="checkbox-cell hidden" id="studentCheckboxHeader" aria-hidden="true"></span>
+    <div class="student-card-list" role="list" aria-label="학생 목록">
+      {% if student_rows %}
+        {% for row in student_rows %}
+          <article class="student-card student-data-row" role="listitem" data-has-allergy="{% if row.allergy_names and row.allergy_names != '없음' %}1{% else %}0{% endif %}" data-has-rfid="{% if row.rfid_id %}1{% else %}0{% endif %}" data-search="{{ ((row.rfid_id or '') ~ ' ' ~ (row.name or '') ~ ' ' ~ (row.student_number or '') ~ ' ' ~ (row.allergy_names or '') ~ ' ' ~ (row.class_label or '') ~ ' ' ~ (row.student_label or ''))|lower }}">
+            <span class="checkbox-cell hidden student-checkbox-cell student-select-pill"><input type="checkbox" class="student-row-checkbox" value="{{ row.row_index }}"></span>
+            <div class="student-card-avatar avatar-tone-{{ loop.index0 % 6 }}">
+              {% if row.picture %}<img src="{{ row.picture }}" alt="{{ row.name or '학생' }} 프로필">{% else %}{{ (row.name or '?')[:1] }}{% endif %}
+            </div>
+            <div class="student-card-main">
+              <div class="student-card-title">
+                <strong>{{ row.name or '-' }}</strong>
+                <span class="student-number">{{ row.student_number or '-' }}</span>
+              </div>
+              <div class="student-card-sub">
+                <span>{{ row.grade or '-' }}학년 {{ row.class_no or '-' }}반 {{ row.number or '-' }}번</span>
+                <span>·</span>
+                <span>{% if row.allergy_names and row.allergy_names != '없음' %}알레르기 관리 필요{% else %}등록된 알레르기 없음{% endif %}</span>
+              </div>
+              <div class="student-card-tags">
+                {% if row.allergy_names and row.allergy_names != '없음' %}
+                  <span class="badge danger">알레르기</span>
+                  <span class="allergy-chip">{{ row.allergy_names }}</span>
+                {% else %}
+                  <span class="badge safe">알레르기 없음</span>
+                {% endif %}
+                {% if row.created_by or row.created_at %}<span class="badge muted">{{ row.created_by or '-' }} · {{ row.created_at or '-' }}</span>{% endif %}
+              </div>
+            </div>
+            <div class="student-card-side">
+              {% if row.rfid_id %}
+                <span class="rfid-pill safe">{{ row.rfid_id }}</span>
+                <small>RFID 등록</small>
+              {% else %}
+                <span class="rfid-pill warn">미등록</span>
+                <small>카드 연결 필요</small>
+              {% endif %}
+              <button class="btn btn-light row-action-button" type="button" onclick='openStudentEditModal({{ row.row_index }}, {{ row.rfid_id|tojson }}, {{ row.name|tojson }}, {{ row.student_number|tojson }}, {{ row.allergy_codes|tojson }})'>수정</button>
+            </div>
+          </article>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state student-empty-state">
+          <span class="empty-state-icon"><svg><use href="#i-users"></use></svg></span>
+          <strong>조건에 맞는 학생이 없습니다.</strong>
+          <p>검색어 또는 필터를 변경해 보세요.</p>
+          <button class="btn btn-primary" type="button" onclick="openStudentModal()">학생 추가</button>
+        </div>
+      {% endif %}
     </div>
   </section>
 </div>
+<script src="{{ url_for('static', filename='admin/admin_ui_polish.js') }}"></script>
 {% endblock %}

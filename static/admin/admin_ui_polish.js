@@ -127,9 +127,37 @@
     };
   }
 
+  function installSidebarNotificationLink() {
+    const dashboards = document.querySelector(".gentelella-nav .nav-group .nav-children");
+    if (dashboards && !dashboards.querySelector("[data-polish-notification-link]")) {
+      const link = document.createElement("a");
+      link.className = "nav-link";
+      link.href = "/admin/notifications";
+      link.setAttribute("data-polish-notification-link", "1");
+      link.innerHTML = '<span class="nav-bullet"></span>알림센터';
+      dashboards.appendChild(link);
+      if (location.pathname === "/admin/notifications" || location.pathname.includes("notification")) link.classList.add("active");
+    }
+
+    const collapsed = document.querySelector(".collapsed-icon-nav");
+    if (collapsed && !collapsed.querySelector("[data-polish-notification-link]")) {
+      const link = document.createElement("a");
+      link.className = "collapsed-icon-link";
+      link.href = "/admin/notifications";
+      link.title = "알림센터";
+      link.setAttribute("aria-label", "알림센터");
+      link.setAttribute("data-polish-notification-link", "1");
+      link.innerHTML = '<svg><use href="#i-bell"></use></svg>';
+      const firstDivider = collapsed.querySelector(".collapsed-icon-divider");
+      collapsed.insertBefore(link, firstDivider || collapsed.children[2] || null);
+      if (location.pathname === "/admin/notifications" || location.pathname.includes("notification")) link.classList.add("active");
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     installProfilePreviewFix();
     installCardSelectionSync();
     installCardFilterFallback();
+    installSidebarNotificationLink();
   });
 })();

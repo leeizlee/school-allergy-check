@@ -52,6 +52,25 @@
     return allNotifications().filter((item) => item.id && !read.has(item.id));
   }
 
+  function targetsFrom(node) {
+    return String(node.dataset.targets || "")
+      .split(/\s+/)
+      .map((target) => target.trim())
+      .filter(Boolean);
+  }
+
+  function unreadCountByTargets(targets, targetCounts, totalUnread) {
+    if (!targets.length) return totalUnread;
+    const seen = new Set();
+    let total = 0;
+    targets.forEach((target) => {
+      if (seen.has(target)) return;
+      seen.add(target);
+      total += targetCounts.get(target) || 0;
+    });
+    return total;
+  }
+
   function saveClientNotification(item) {
     if (!item || !item.id) return;
     const list = clientNotifications().filter((old) => old.id !== item.id);
@@ -110,13 +129,26 @@
   }
 
   function refreshBadges() {
-    const unreadTargets = new Set(unreadNotifications().map((item) => item.target).filter(Boolean));
+    const unread = unreadNotifications();
+    const targetCounts = new Map();
+    unread.forEach((item) => {
+      if (!item.target) return;
+      targetCounts.set(item.target, (targetCounts.get(item.target) || 0) + 1);
+    });
     document.querySelectorAll(".js-new-badge").forEach((badge) => {
-      const targets = String(badge.dataset.targets || "").split(/\s+/).filter(Boolean);
-      badge.classList.toggle("hidden", !targets.some((target) => unreadTargets.has(target)));
+      const count = unreadCountByTargets(targetsFrom(badge), targetCounts, unread.length);
+      badge.textContent = "New";
+      badge.classList.toggle("hidden", count <= 0);
+      badge.setAttribute("aria-label", `${count}개의 새 알림`);
+    });
+    document.querySelectorAll(".js-count-badge").forEach((badge) => {
+      const count = unreadCountByTargets(targetsFrom(badge), targetCounts, unread.length);
+      badge.textContent = count > 99 ? "99+" : String(count);
+      badge.classList.toggle("hidden", count <= 0);
+      badge.setAttribute("aria-label", `${count}개의 새 알림`);
     });
     const bell = document.getElementById("topbarNotificationButton") || document.querySelector(".notification-wrap .icon-action");
-    if (bell) bell.classList.toggle("has-dot", unreadTargets.size > 0);
+    if (bell) bell.classList.toggle("has-dot", unread.length > 0);
   }
 
   function injectStyle() {
@@ -124,7 +156,8 @@
     const style = document.createElement("style");
     style.id = "adminNotificationPatchStyle";
     style.textContent = `
-      .nav-link-new{margin-left:auto;padding:2px 6px;border-radius:999px;background:rgba(75,185,159,.13);border:1px solid rgba(75,185,159,.25);color:#75dbc8;font-size:10px;font-weight:900}
+      .nav-count,.nav-link-count{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;background:#183742;border:1px solid rgba(85,195,170,.22);color:#7ee0cc;font-size:11px;font-weight:900;line-height:1}
+      .nav-link-new{margin-left:auto;padding:2px 6px;border-radius:4px;background:rgba(75,185,159,.13);border:1px solid rgba(75,185,159,.25);color:#75dbc8;font-size:10px;font-weight:900}
       .notification-item{color:inherit;text-decoration:none}
       .notification-item.unread{background:rgba(91,141,239,.07)}
       .notification-item:hover{background:rgba(85,195,170,.08)}
@@ -138,23 +171,40 @@
     document.head.appendChild(style);
   }
 
-  function badge(targets) {
-    return `<span class="nav-link-new js-new-badge hidden" data-targets="${targets}">New</span>`;
+  function countBadge(targets) {
+    return `<span class="nav-link-count js-count-badge hidden" data-targets="${targets}">0</span>`;
+  }
+
+  function categoryBadge(targets) {
+    return `<span class="nav-tag new js-new-badge hidden" data-targets="${targets}">New</span>`;
+  }
+
+  function ensureCategoryBadge(group, targets) {
+    const parent = group?.querySelector(".nav-parent");
+    if (!parent || parent.querySelector(".js-new-badge")) return;
+    parent.classList.add("has-tag");
+    parent.querySelector(".chevron")?.insertAdjacentHTML("beforebegin", categoryBadge(targets));
   }
 
   function enhanceSidebar() {
     const lunchLink = document.querySelector('a[href="/lunch-log"]');
-    if (lunchLink && !lunchLink.querySelector(".js-new-badge")) {
-      lunchLink.insertAdjacentHTML("beforeend", badge("lunch_log"));
+    if (lunchLink && !lunchLink.querySelector(".js-count-badge")) {
+      lunchLink.insertAdjacentHTML("beforeend", countBadge("lunch_log"));
     }
-    const dashboardParent = lunchLink?.closest(".nav-group")?.querySelector(".nav-parent");
-    if (dashboardParent && !dashboardParent.querySelector(".js-new-badge")) {
-      dashboardParent.classList.add("has-tag");
-      dashboardParent.querySelector(".chevron")?.insertAdjacentHTML("beforebegin", '<span class="nav-tag new js-new-badge hidden" data-targets="lunch_log notifications">New</span>');
-    }
+    ensureCategoryBadge(lunchLink?.closest(".nav-group"), "lunch_log notifications");
     if (lunchLink && !document.querySelector('a[href="/notifications"]')) {
-      lunchLink.insertAdjacentHTML("afterend", `<a class="nav-link" href="/notifications"><span class="nav-bullet"></span>알림센터${badge("notifications lunch_log meal_ai ai_tools ai_daily ai_student ai_menu student_manage menu_manage")}</a>`);
+      lunchLink.insertAdjacentHTML("afterend", `<a class="nav-link" href="/notifications"><span class="nav-bullet"></span>알림센터${countBadge("notifications lunch_log meal_ai ai_tools ai_daily ai_student ai_menu student_manage menu_manage system_status audit_log")}</a>`);
     }
+
+    [
+      ["/student-manage", "student_manage"],
+      ["/menu-manage", "menu_manage"],
+      ["/trash", "trash"],
+    ].forEach(([href, target]) => {
+      const link = document.querySelector(`.gentelella-nav a[href="${href}"]`);
+      if (link && !link.querySelector(".js-count-badge")) link.insertAdjacentHTML("beforeend", countBadge(target));
+      ensureCategoryBadge(link?.closest(".nav-group"), "student_manage menu_manage trash");
+    });
 
     const aiParentBadge = Array.from(document.querySelectorAll(".nav-parent .nav-tag.new")).find((node) => node.closest(".nav-parent")?.textContent.includes("AI Tools"));
     if (aiParentBadge) {
@@ -169,8 +219,32 @@
       ["/admin/ai-tools/menu-review", "ai_menu"],
     ].forEach(([href, target]) => {
       const link = document.querySelector(`.gentelella-nav a[href="${href}"]`);
-      if (link && !link.querySelector(".js-new-badge")) link.insertAdjacentHTML("beforeend", badge(target));
+      if (link && !link.querySelector(".js-count-badge")) link.insertAdjacentHTML("beforeend", countBadge(target));
     });
+
+    const systemGroup = Array.from(document.querySelectorAll(".nav-group")).find((group) => group.textContent.includes("System") || group.textContent.includes("Device"));
+    const systemChildren = systemGroup?.querySelector(".nav-children");
+    ensureCategoryBadge(systemGroup, "system_status audit_log");
+    if (systemChildren && !document.querySelector('a[href="/system-status"]')) {
+      systemChildren.insertAdjacentHTML("afterbegin", `<a class="nav-link" href="/system-status"><span class="nav-bullet"></span>시스템 상태${countBadge("system_status")}</a><a class="nav-link" href="/audit-log"><span class="nav-bullet"></span>감사 로그${countBadge("audit_log")}</a>`);
+    }
+    if (systemChildren) {
+      const raspberryLink = systemChildren.querySelector('a[href="/kiosk"]');
+      const rfidLinks = Array.from(systemChildren.querySelectorAll("a.nav-link")).filter((link) => {
+        const href = link.getAttribute("href") || "";
+        return href && !["/system-status", "/audit-log", "/kiosk"].includes(href);
+      });
+      if (rfidLinks.length) {
+        rfidLinks[0].innerHTML = '<span class="nav-bullet"></span>RFID 모니터';
+      } else if (raspberryLink && !systemChildren.querySelector('[data-fixed-rfid-monitor="1"]')) {
+        raspberryLink.insertAdjacentHTML("afterend", '<a class="nav-link" href="/kiosk" target="_blank" data-fixed-rfid-monitor="1"><span class="nav-bullet"></span>RFID 모니터</a>');
+      }
+    }
+    if (systemGroup && ["/system-status", "/audit-log"].includes(window.location.pathname)) {
+      systemGroup.classList.add("open");
+      systemGroup.querySelector("[data-nav-toggle]")?.setAttribute("aria-expanded", "true");
+      systemGroup.querySelector(`a[href="${window.location.pathname}"]`)?.classList.add("active");
+    }
   }
 
   async function refreshServerNotifications() {
@@ -268,10 +342,15 @@
     const path = window.location.pathname;
     if (path === "/notifications") setTimeout(() => markTargetRead(), 500);
     else if (path === "/lunch-log") setTimeout(() => markTargetRead("lunch_log"), 500);
+    else if (path === "/student-manage") setTimeout(() => markTargetRead("student_manage"), 500);
+    else if (path === "/menu-manage") setTimeout(() => markTargetRead("menu_manage"), 500);
+    else if (path === "/trash") setTimeout(() => markTargetRead("trash"), 500);
     else if (path === "/admin/meal/upload" || path.startsWith("/admin/meal/analyze/result/")) setTimeout(() => markTargetRead("meal_ai"), 500);
     else if (path === "/admin/ai-tools/daily-brief") setTimeout(() => markTargetRead("ai_daily"), 500);
     else if (path === "/admin/ai-tools/student-plan") setTimeout(() => markTargetRead("ai_student"), 500);
     else if (path === "/admin/ai-tools/menu-review") setTimeout(() => markTargetRead("ai_menu"), 500);
     else if (path === "/admin/ai-tools") setTimeout(() => markTargetRead("ai_tools"), 500);
+    else if (path === "/system-status") setTimeout(() => markTargetRead("system_status"), 500);
+    else if (path === "/audit-log") setTimeout(() => markTargetRead("audit_log"), 500);
   });
 })();

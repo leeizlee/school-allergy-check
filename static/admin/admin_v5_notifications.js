@@ -195,6 +195,13 @@
     if (lunchLink && !document.querySelector('a[href="/notifications"]')) {
       lunchLink.insertAdjacentHTML("afterend", `<a class="nav-link" href="/notifications"><span class="nav-bullet"></span>알림센터${countBadge("notifications lunch_log meal_ai ai_tools ai_daily ai_student ai_menu student_manage menu_manage system_status audit_log")}</a>`);
     }
+    const notificationLink = document.querySelector('a[href="/notifications"]');
+    if (notificationLink && window.location.pathname === "/notifications") {
+      const group = notificationLink.closest(".nav-group");
+      notificationLink.classList.add("active");
+      group?.classList.add("open");
+      group?.querySelector("[data-nav-toggle]")?.setAttribute("aria-expanded", "true");
+    }
 
     [
       ["/student-manage", "student_manage"],

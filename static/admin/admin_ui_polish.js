@@ -12,7 +12,17 @@
     document.head.appendChild(link);
   }
 
+  function installProfilePreviewScript() {
+    if (document.querySelector('script[data-profile-preview-fix="1"]')) return;
+    const script = document.createElement("script");
+    script.src = "/static/admin/profile_preview_fix.js";
+    script.defer = true;
+    script.setAttribute("data-profile-preview-fix", "1");
+    document.head.appendChild(script);
+  }
+
   installThemeFixCss();
+  installProfilePreviewScript();
 
   function setStatus(node, message, ok) {
     if (!node) return;

@@ -6,7 +6,7 @@ import re
 import time
 from pathlib import Path
 
-from flask import jsonify, request, session
+from flask import Response, abort, jsonify, request, send_file, session
 
 from admin import app_admin as legacy
 from admin.app_admin import app
@@ -66,12 +66,51 @@ def _normalize_profile_image(raw):
             left = (width - side) // 2
             top = (height - side) // 2
             image = image.crop((left, top, left + side, top + side))
-            image = image.resize((320, 320), Image.LANCZOS)
+            image = image.resize((192, 192), Image.LANCZOS)
             output = io.BytesIO()
             image.save(output, format="JPEG", quality=88, optimize=True)
             return output.getvalue()
     except Exception as exc:
         raise ValueError("이미지를 처리하지 못했어. 다른 사진으로 다시 시도해줘.") from exc
+
+
+def _ensure_header(ws, header_name):
+    headers = [legacy.safe_str(item).strip() for item in ws.row_values(1)]
+    if header_name in headers:
+        return True
+    ws.update_cell(1, len(headers) + 1, header_name)
+    try:
+        legacy._invalidate_sheet_cache(ws)
+    except Exception:
+        pass
+    return True
+
+
+def _update_login_cell(row_index, header_name, value):
+    try:
+        legacy.update_cell_by_header(legacy.id_ws, row_index, header_name, value)
+        return True
+    except ValueError:
+        _ensure_header(legacy.id_ws, header_name)
+        legacy.update_cell_by_header(legacy.id_ws, row_index, header_name, value)
+        return True
+
+
+def _picture_blob_for_filename(filename):
+    target = Path(filename).name
+    try:
+        records = legacy._cached_get_all_records(legacy.id_ws)
+    except Exception:
+        records = legacy.id_ws.get_all_records()
+    for record in records:
+        row = legacy.clean_record_keys(record)
+        login_id = legacy.safe_str(row.get("id")).strip()
+        if _profile_filename(login_id) != target:
+            continue
+        blob = legacy.safe_str(row.get("picture_blob")).strip()
+        if blob:
+            return blob
+    return ""
 
 
 def api_my_account_picture_v5():
@@ -104,13 +143,29 @@ def api_my_account_picture_v5():
     output_path = _PROFILE_DIR / filename
     output_path.write_bytes(image_bytes)
 
-    picture_url = f"/static/profile_pictures/{filename}?v={int(time.time())}"
+    picture_url = f"/profile-pictures/{filename}?v={int(time.time())}"
     try:
-        legacy.update_cell_by_header(legacy.id_ws, login_row["row_index"], "picture", picture_url)
+        _update_login_cell(login_row["row_index"], "picture", picture_url)
+        _update_login_cell(login_row["row_index"], "picture_blob", base64.b64encode(image_bytes).decode("ascii"))
     except ValueError:
         return jsonify({"ok": False, "error": "id 시트에 picture 헤더가 필요해."}), 400
 
     return jsonify({"ok": True, "picture": picture_url})
+
+
+@app.get("/profile-pictures/<path:filename>")
+def profile_picture_file(filename):
+    safe_name = Path(filename).name
+    output_path = _PROFILE_DIR / safe_name
+    if output_path.exists() and output_path.is_file():
+        return send_file(output_path, mimetype="image/jpeg", max_age=3600)
+    blob = _picture_blob_for_filename(safe_name)
+    if not blob:
+        abort(404)
+    try:
+        return Response(base64.b64decode(blob), mimetype="image/jpeg", headers={"Cache-Control": "private, max-age=3600"})
+    except Exception:
+        abort(404)
 
 
 @app.after_request

@@ -5,6 +5,7 @@
   <a class="btn btn-primary" href="{{ url_for('kiosk_page') }}" target="_blank">RFID 모니터</a>
 {% endblock %}
 {% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin/admin_ui_polish.css') }}">
 {% set lunch_insights = lunch_insights|default({}) %}
 {% set today_stats = today_stats|default({}) %}
 {% set attendance_summary = attendance_summary|default({}) %}
@@ -32,13 +33,13 @@
   <article class="stat-card warn with-icon"><span class="stat-icon">RF</span><span>미등록 RFID</span><strong>{{ lunch_insights.unknown_count }}</strong><small>카드 등록 필요</small><div class="mini-bars amber"></div></article>
 </section>
 
-<section class="dashboard-grid">
+<section class="dashboard-grid lunch-roster-grid">
   <article class="panel panel-wide">
     <div class="panel-title">
       <div><h2>급식 체크 명단</h2><p>{{ active_lunch_date[:4] }}-{{ active_lunch_date[4:6] }}-{{ active_lunch_date[6:8] }} 기준 식사 확인 현황</p></div>
       <span class="badge info">{{ attendance_summary.eaten_count }} / {{ attendance_summary.total_students }}명 확인</span>
     </div>
-    <div class="toolbar">
+    <div class="toolbar lunch-toolbar">
       <form class="inline-form" method="get" action="{{ url_for('lunch_log_page') }}">
         <input class="date-input" type="date" name="date" value="{{ selected_date_input }}">
         <input type="hidden" name="class_key" value="{{ selected_class }}">
@@ -51,7 +52,7 @@
         {% endfor %}
       </div>
     </div>
-    <div class="dashboard-grid equal">
+    <div class="dashboard-grid equal lunch-summary-metrics">
       <div class="mini-metric"><strong>{{ attendance_summary.eaten_count }}</strong><span>식사 확인</span></div>
       <div class="mini-metric"><strong>{{ attendance_summary.not_eaten_count }}</strong><span>미확인</span></div>
       <div class="mini-metric"><strong>{{ today_stats.warning_count }}</strong><span>위험</span></div>
@@ -60,12 +61,16 @@
   </article>
   <article class="panel">
     <div class="panel-title"><div><h2>미확인 학생</h2><p>아직 RFID 인식 기록이 없는 학생</p></div><span class="badge warn">{{ attendance_summary.not_eaten_count }}명</span></div>
-    <div class="item-list short">
+    <div class="people-card-list short">
       {% if attendance_summary.not_eaten_rows %}
         {% for row in attendance_summary.not_eaten_rows[:8] %}
-        <div class="list-row compact">
-          <div><strong>{{ row.name or '-' }}</strong><small>{{ row.grade or '-' }}학년 {{ row.class_no or '-' }}반 {{ row.number or '-' }}번 · {{ row.allergy_names or '알레르기 없음' }}</small></div>
-          <span class="badge muted">{{ row.student_number or '-' }}</span>
+        <div class="person-list-card compact">
+          <span class="person-avatar avatar-tone-{{ loop.index0 % 6 }}">{{ (row.name or '?')[:1] }}</span>
+          <div class="person-main">
+            <div class="person-title"><strong>{{ row.name or '-' }}</strong><span class="student-number">{{ row.student_number or '-' }}</span></div>
+            <div class="person-sub">{{ row.grade or '-' }}학년 {{ row.class_no or '-' }}반 {{ row.number or '-' }}번 · {{ row.allergy_names or '알레르기 없음' }}</div>
+          </div>
+          <div class="person-side"><span class="rfid-pill muted">{{ row.student_number or '-' }}</span></div>
         </div>
         {% endfor %}
       {% else %}
@@ -78,12 +83,18 @@
 <section class="dashboard-grid equal">
   <article class="panel">
     <div class="panel-title"><div><h2>최근 RFID 체크</h2><p>가장 최근 인식된 급식 로그</p></div></div>
-    <div class="item-list">
+    <div class="people-card-list">
       {% if lunch_log_rows %}
         {% for row in lunch_log_rows[:8] %}
-        <div class="list-row">
-          <div><strong>{{ row.name or row.rfid_id or '-' }}</strong><small>{{ row.scanned_at or '-' }} · {{ row.grade or '-' }}학년 {{ row.class_no or '-' }}반</small></div>
-          {% if row.result == '경고' %}<span class="badge danger">위험</span>{% elif row.result == 'OK' %}<span class="badge safe">안전</span>{% elif row.result == '미등록' %}<span class="badge warn">미등록</span>{% else %}<span class="badge muted">{{ row.result or '-' }}</span>{% endif %}
+        <div class="person-list-card {% if row.result == '경고' %}danger{% elif row.result == '미등록' %}warn{% endif %}">
+          <span class="person-avatar avatar-tone-{{ loop.index0 % 6 }} {% if row.result == '경고' %}danger{% elif row.result == 'OK' %}safe{% else %}warn{% endif %}">{{ (row.name or row.rfid_id or 'RF')[:2] }}</span>
+          <div class="person-main">
+            <div class="person-title"><strong>{{ row.name or row.rfid_id or '-' }}</strong><span class="person-time">{{ row.scanned_at or '-' }}</span></div>
+            <div class="person-sub">{{ row.grade or '-' }}학년 {{ row.class_no or '-' }}반 · {{ row.hit_names or '위험 없음' }}</div>
+          </div>
+          <div class="person-side">
+            {% if row.result == '경고' %}<span class="rfid-pill danger">위험</span>{% elif row.result == 'OK' %}<span class="rfid-pill safe">안전</span>{% elif row.result == '미등록' %}<span class="rfid-pill warn">미등록</span>{% else %}<span class="rfid-pill muted">{{ row.result or '-' }}</span>{% endif %}
+          </div>
         </div>
         {% endfor %}
       {% else %}
@@ -93,13 +104,17 @@
   </article>
   <article class="panel">
     <div class="panel-title"><div><h2>위험/미등록 확인</h2><p>급식실에서 바로 확인할 항목</p></div></div>
-    <div class="item-list">
+    <div class="people-card-list">
       {% set issue_rows = (lunch_insights.danger_rows|default([])) + (lunch_insights.unknown_rows|default([])) %}
       {% if issue_rows %}
         {% for row in issue_rows[:8] %}
-        <div class="list-row">
-          <div><strong>{{ row.name or row.rfid_id or '-' }}</strong><small>{{ row.scanned_at or '-' }} · {{ row.hit_names or '카드 등록 필요' }}</small></div>
-          {% if row.result == '경고' %}<span class="badge danger">위험</span>{% else %}<span class="badge warn">미등록</span>{% endif %}
+        <div class="person-list-card {% if row.result == '경고' %}danger{% else %}warn{% endif %}">
+          <span class="person-avatar avatar-tone-{{ loop.index0 % 6 }}">{{ (row.name or row.rfid_id or '?')[:2] }}</span>
+          <div class="person-main">
+            <div class="person-title"><strong>{{ row.name or row.rfid_id or '-' }}</strong><span class="person-time">{{ row.scanned_at or '-' }}</span></div>
+            <div class="person-sub">{{ row.hit_names or '카드 등록 필요' }}</div>
+          </div>
+          <div class="person-side">{% if row.result == '경고' %}<span class="rfid-pill danger">위험</span>{% else %}<span class="rfid-pill warn">미등록</span>{% endif %}</div>
         </div>
         {% endfor %}
       {% else %}
@@ -139,4 +154,5 @@
     </table>
   </div>
 </section>
+<script src="{{ url_for('static', filename='admin/admin_ui_polish.js') }}"></script>
 {% endblock %}

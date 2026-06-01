@@ -3,7 +3,7 @@ import time
 from collections import Counter
 from datetime import datetime
 
-from flask import jsonify, redirect, request, session, url_for
+from flask import request, session
 
 from admin import app_admin as legacy
 from admin import v5_admin_renderer
@@ -14,99 +14,28 @@ from admin.app_admin import app
 
 _OPS_SHEET_CACHE = {}
 _OPS_SHEET_LOCK = threading.Lock()
+
 _NOTIFICATION_HEADERS = ["id", "target", "path", "icon", "title", "detail", "time", "kind", "created_at"]
 _AUDIT_HEADERS = ["id", "time", "action", "category", "detail", "status", "status_code", "path", "method", "ip", "actor_id", "actor_name", "role"]
-
-_ROLE_LABELS = {
-    "a": "최고관리자", "admin": "최고관리자", "super": "최고관리자", "superadmin": "최고관리자",
-    "n": "영양사", "nutritionist": "영양사", "dietitian": "영양사", "영양사": "영양사",
-    "h": "담임교사", "homeroom": "담임교사", "담임": "담임교사",
-    "t": "일반교사", "teacher": "일반교사", "교사": "일반교사",
-}
-_ADMIN_ROLES = set(_ROLE_LABELS)
-_FULL_ROLES = {"a", "admin", "super", "superadmin"}
-_NUTRITION_ROLES = {"n", "nutritionist", "dietitian", "영양사"}
-_TEACHER_ROLES = {"h", "homeroom", "담임", "t", "teacher", "교사"}
-
-_PAGE_PERMISSIONS = {
-    "student_manage_page": _FULL_ROLES | _TEACHER_ROLES,
-    "menu_manage_page": _FULL_ROLES | _NUTRITION_ROLES,
-    "lunch_log_page": _ADMIN_ROLES,
-    "meal_upload_page": _FULL_ROLES | _NUTRITION_ROLES,
-    "ai_tools_page": _ADMIN_ROLES,
-    "ai_tools_daily_brief_page": _ADMIN_ROLES,
-    "ai_tools_student_plan_page": _ADMIN_ROLES,
-    "ai_tools_menu_review_page": _ADMIN_ROLES,
-    "trash_page": _FULL_ROLES,
-    "system_status_page": _ADMIN_ROLES,
-    "audit_log_page": _FULL_ROLES,
-    "notifications_page": _ADMIN_ROLES,
-}
-
-_WRITE_PERMISSIONS = {
-    "api_add_student": _FULL_ROLES,
-    "api_student_sheet_add": _FULL_ROLES,
-    "api_student_sheet_confirm": _FULL_ROLES,
-    "api_student_update": _FULL_ROLES | {"h", "homeroom", "담임"},
-    "api_student_reset_password": _FULL_ROLES,
-    "api_delete_selected_students": _FULL_ROLES,
-    "api_add_menu": _FULL_ROLES | _NUTRITION_ROLES,
-    "api_menu_group_update": _FULL_ROLES | _NUTRITION_ROLES,
-    "api_delete_selected_menus": _FULL_ROLES | _NUTRITION_ROLES,
-    "meal_analyze_page": _FULL_ROLES | _NUTRITION_ROLES,
-    "meal_save_page": _FULL_ROLES | _NUTRITION_ROLES,
-    "api_meal_analyze_async": _FULL_ROLES | _NUTRITION_ROLES,
-    "api_ai_safety_plan": _ADMIN_ROLES,
-    "api_ai_daily_brief": _ADMIN_ROLES,
-    "api_ai_menu_review": _ADMIN_ROLES,
-    "api_my_account_update": _ADMIN_ROLES,
-    "api_my_account_reset_password": _ADMIN_ROLES,
-    "api_my_account_picture": _ADMIN_ROLES,
-    "api_trash_menu_restore": _FULL_ROLES,
-    "api_trash_student_restore": _FULL_ROLES,
-    "api_trash_menu_hard_delete": _FULL_ROLES,
-    "api_trash_student_hard_delete": _FULL_ROLES,
-}
-
 
 def _role_key():
     return legacy.safe_str(session.get("role")).strip().lower()
 
 
 def _role_label(role=None):
-    return _ROLE_LABELS.get(role or _role_key(), "관리자")
+    key = legacy.safe_str(role if role is not None else _role_key()).strip().lower()
+    return "학생" if key == "s" else "관리자"
 
 
 def _is_admin_role():
-    return legacy.is_logged_in() and _role_key() in _ADMIN_ROLES
+    return legacy.is_logged_in() and not legacy.is_student()
 
 
 legacy.is_admin = _is_admin_role
 
 
-def _forbidden(message="현재 계정 권한으로는 실행할 수 없어."):
-    if request.path.startswith("/api/") or "application/json" in request.headers.get("Accept", ""):
-        return jsonify({"ok": False, "error": message}), 403
-    return message, 403
-
-
 @app.before_request
 def _v5_role_guard():
-    if request.path.startswith(("/kiosk", "/api/kiosk", "/static", "/profile-pictures")):
-        return None
-    if not legacy.is_logged_in() or legacy.is_student():
-        return None
-    role = _role_key()
-    if role in _FULL_ROLES:
-        return None
-    endpoint = request.endpoint or ""
-    if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
-        allowed = _WRITE_PERMISSIONS.get(endpoint)
-        if allowed is not None and role not in allowed:
-            return _forbidden(f"{_role_label(role)} 권한으로는 이 변경 작업을 실행할 수 없어.")
-    allowed_pages = _PAGE_PERMISSIONS.get(endpoint)
-    if allowed_pages is not None and role not in allowed_pages:
-        return redirect(url_for("home"))
     return None
 
 
@@ -155,13 +84,13 @@ def _read_ops_rows(title, headers, limit=120):
         ws = _ensure_ops_sheet(title, headers)
         if not ws:
             return []
-        return [legacy.clean_record_keys(row) for row in ws.get_all_records()][-limit:]
+        values = ws.get_all_records()
+        return [legacy.clean_record_keys(row) for row in values][-limit:]
     except Exception:
         return []
 
 
 _original_add_admin_event = realtime._add_admin_event
-_original_admin_events = realtime._admin_events
 
 
 def _persistent_add_admin_event(item):
@@ -198,11 +127,11 @@ def _persistent_admin_events():
     return result[:60]
 
 
+_original_admin_events = realtime._admin_events
 realtime._add_admin_event = _persistent_add_admin_event
 realtime._admin_events = _persistent_admin_events
 
 _original_record_audit = ops._record_audit
-_original_audit_logs = ops._audit_logs
 
 
 def _persistent_record_audit(action, category, detail="", status="success", status_code=200):
@@ -226,7 +155,7 @@ def _persistent_record_audit(action, category, detail="", status="success", stat
         "ip": item.get("ip") or "-",
         "actor_id": actor.get("id") or legacy.safe_str(session.get("login_id")).strip(),
         "actor_name": actor.get("name") or legacy.safe_str(session.get("login_name")).strip(),
-        "role": actor.get("role") or _role_key(),
+        "role": _role_label(actor.get("role") or _role_key()),
     }
     _append_ops_row("admin_audit", _AUDIT_HEADERS, row)
 
@@ -246,7 +175,7 @@ def _persistent_audit_logs(limit=120):
             "path": legacy.safe_str(row.get("path")).strip(),
             "method": legacy.safe_str(row.get("method")).strip(),
             "ip": legacy.safe_str(row.get("ip")).strip(),
-            "actor": {"id": legacy.safe_str(row.get("actor_id")).strip(), "name": legacy.safe_str(row.get("actor_name")).strip(), "role": legacy.safe_str(row.get("role")).strip()},
+            "actor": {"id": legacy.safe_str(row.get("actor_id")).strip(), "name": legacy.safe_str(row.get("actor_name")).strip(), "role": _role_label(row.get("role"))},
         })
     seen = set()
     result = []
@@ -259,6 +188,7 @@ def _persistent_audit_logs(limit=120):
     return result[:limit]
 
 
+_original_audit_logs = ops._audit_logs
 ops._record_audit = _persistent_record_audit
 ops._audit_logs = _persistent_audit_logs
 
@@ -291,13 +221,11 @@ def _code_label(code):
 
 def _ai_room_payload(context):
     students = context.get("all_student_rows") or context.get("student_rows") or []
-    today = context.get("today_sheet")
-    menus = [row for row in context.get("menu_rows", []) if legacy.compact_date_value(row.get("date")) == today]
+    menus = [row for row in context.get("menu_rows", []) if legacy.compact_date_value(row.get("date")) == context.get("today_sheet")]
     menu_codes = Counter()
     for menu in menus:
         for code in _codes(menu):
             menu_codes[code] += 1
-
     risky_students = []
     for student in students:
         student_codes = set(_codes(student))
@@ -350,7 +278,12 @@ def _ai_room_payload(context):
         recommendations.append("오늘 등록된 식단 기준으로 즉시 확인할 고위험 조합은 없습니다.")
 
     return {
-        "summary": {"risky_student_count": len(risky_students), "risky_menu_count": len(menu_risks), "allergy_code_count": len(menu_codes), "risk_level": "주의" if risky_students else "안정"},
+        "summary": {
+            "risky_student_count": len(risky_students),
+            "risky_menu_count": len(menu_risks),
+            "allergy_code_count": len(menu_codes),
+            "risk_level": "주의" if risky_students else "안정",
+        },
         "risky_students": risky_students[:5],
         "risky_menus": menu_risks[:5],
         "allergy_focus": allergy_focus[:8],
@@ -363,13 +296,12 @@ _original_build_context = v5_admin_renderer._build_context
 
 def _build_context_with_enterprise(*args, **kwargs):
     context = _original_build_context(*args, **kwargs)
-    role = _role_key()
-    context["current_role"] = role
-    context["role_label"] = _role_label(role)
+    context["current_role"] = "admin"
+    context["role_label"] = "관리자"
     context["role_permissions"] = {
-        "can_manage_students": role in _FULL_ROLES or role in {"h", "homeroom", "담임"},
-        "can_manage_menus": role in _FULL_ROLES or role in _NUTRITION_ROLES,
-        "can_view_audit": role in _FULL_ROLES,
+        "can_manage_students": True,
+        "can_manage_menus": True,
+        "can_view_audit": True,
     }
     context["ai_room"] = _ai_room_payload(context) if context.get("active_tab") == "ai_tools" else {"summary": {}, "risky_students": [], "risky_menus": [], "allergy_focus": [], "recommendations": []}
     return context

@@ -4,6 +4,7 @@
   <button class="btn btn-light" type="button" onclick="markAdminNotificationsRead()">모두 읽음</button>
 {% endblock %}
 {% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin/admin_theme_fix.css') }}">
 <section class="panel">
   <div class="panel-title">
     <div>
@@ -32,6 +33,7 @@
     {% endif %}
   </div>
 </section>
+<script src="{{ url_for('static', filename='admin/admin_ui_polish.js') }}"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const list = document.getElementById("notificationPageList");

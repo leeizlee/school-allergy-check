@@ -1,0 +1,186 @@
+.admin-v5 {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", "Apple SD Gothic Neo", Arial, sans-serif;
+  font-weight: 400;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.admin-v5 h1,
+.admin-v5 h2,
+.admin-v5 h3,
+.admin-v5 h4,
+.admin-v5 strong,
+.admin-v5 b,
+.admin-v5 .btn,
+.admin-v5 .nav-parent,
+.admin-v5 .nav-direct,
+.admin-v5 .nav-link,
+.admin-v5 .topbar-left span,
+.admin-v5 .page-heading h1,
+.admin-v5 .panel-title h2,
+.admin-v5 .stat-card strong,
+.admin-v5 .student-kpi strong,
+.admin-v5 .badge,
+.admin-v5 .nav-tag,
+.admin-v5 .nav-count,
+.admin-v5 .nav-link-count {
+  font-weight: 650;
+}
+
+.admin-v5 .page-heading h1 {
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.admin-v5 .panel-title h2,
+.admin-v5 .product-card-title h2,
+.admin-v5 .student-hero h2 {
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.admin-v5 .page-heading p,
+.admin-v5 .panel-title p,
+.admin-v5 .product-card-title p,
+.admin-v5 .student-hero p,
+.admin-v5 small {
+  line-height: 1.5;
+}
+
+.admin-workflow-toast-stack {
+  position: fixed;
+  top: 72px;
+  right: 22px;
+  z-index: 1800;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.admin-workflow-toast {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 13px;
+  align-items: center;
+  min-height: 78px;
+  padding: 13px 15px;
+  color: #eef4ff;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 16px;
+  background: rgba(28, 32, 38, .96);
+  box-shadow: 0 22px 70px rgba(15, 23, 42, .28), 0 2px 6px rgba(15, 23, 42, .2);
+  backdrop-filter: blur(14px);
+  transform: translateY(0);
+  opacity: 1;
+  animation: adminWorkflowToastIn .22s ease-out both;
+}
+
+.admin-workflow-toast:hover {
+  transform: translateY(-1px);
+  border-color: rgba(126, 224, 204, .28);
+  color: #fff;
+}
+
+.admin-workflow-toast.leaving {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.admin-workflow-toast-media,
+.admin-workflow-toast-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.admin-workflow-toast-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-workflow-toast-thumb {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #55c3aa, #5b8def);
+}
+
+.admin-workflow-toast-thumb.danger {
+  background: linear-gradient(135deg, #e55353, #f0ad4e);
+}
+
+.admin-workflow-toast-thumb.warn {
+  background: linear-gradient(135deg, #f0ad4e, #d98f2b);
+}
+
+.admin-workflow-toast-thumb.safe,
+.admin-workflow-toast-thumb.info {
+  background: linear-gradient(135deg, #55c3aa, #47b881);
+}
+
+.admin-workflow-toast-copy {
+  min-width: 0;
+}
+
+.admin-workflow-toast-copy strong {
+  display: block;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-workflow-toast-copy small {
+  display: block;
+  margin-top: 4px;
+  color: rgba(238, 244, 255, .72);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+body.light-mode.admin-v5 .admin-workflow-toast {
+  color: #111827;
+  background: rgba(255, 255, 255, .96);
+  border-color: rgba(15, 23, 42, .08);
+  box-shadow: 0 22px 70px rgba(15, 23, 42, .16), 0 2px 6px rgba(15, 23, 42, .08);
+}
+
+body.light-mode.admin-v5 .admin-workflow-toast-copy strong {
+  color: #111827;
+}
+
+body.light-mode.admin-v5 .admin-workflow-toast-copy small {
+  color: #667085;
+}
+
+@keyframes adminWorkflowToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-workflow-toast-stack {
+    top: 64px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+}

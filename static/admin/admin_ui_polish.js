@@ -3,6 +3,17 @@
     return Array.from((root || document).querySelectorAll(selector));
   }
 
+  function installThemeFixCss() {
+    if (document.querySelector('link[data-admin-theme-fix="1"]')) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "/static/admin/admin_theme_fix.css";
+    link.setAttribute("data-admin-theme-fix", "1");
+    document.head.appendChild(link);
+  }
+
+  installThemeFixCss();
+
   function setStatus(node, message, ok) {
     if (!node) return;
     node.textContent = message || "";

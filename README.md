@@ -127,65 +127,9 @@ RFID 기반 AI 급식 메뉴 알레르기 위험도 자동 판단 시스템입�
 - 서버는 학생 정보, 당일 급식, 알레르기 코드를 기준으로 판정 결과를 반환합니다.
 - 키오스크 화면과 동작은 관리자 UI 개편과 분리되어 유지됩니다.
 
-## 주요 API와 동작
-
-- `POST /api/kiosk/scan`: RFID 스캔 결과를 서버로 전송합니다.
-- `POST /api/student`: 학생을 추가합니다.
-- `POST /api/student/update`: 학생 정보를 수정합니다.
-- `POST /api/student/delete-selected`: 선택한 학생을 휴지통으로 이동합니다.
-- `POST /api/student/sheet-add`: 학생 대량 추가 데이터를 미리보기로 변환합니다.
-- `POST /api/student/sheet-confirm`: 학생 대량 추가를 확정합니다.
-- `POST /api/menu`: 급식 메뉴를 추가합니다.
-- `POST /api/menu/group-update`: 날짜별 급식 메뉴 묶음을 수정합니다.
-- `POST /api/menu/delete-selected`: 선택한 급식 메뉴를 휴지통으로 이동합니다.
-- `POST /admin/meal/analyze`: 급식표 파일을 AI/OCR로 분석합니다.
-- `POST /admin/meal/save`: 분석된 급식 메뉴를 저장합니다.
-- `POST /api/meal/save-async`: AI급식 저장을 백그라운드 작업으로 등록합니다.
-- `GET /api/admin/background-jobs`: 백그라운드 작업 상태를 조회합니다.
-- `POST /api/ai/safety-plan`: 학생별 안전계획을 생성합니다.
-- `POST /api/ai/daily-brief`: 오늘 급식 위험 브리핑을 생성합니다.
-- `POST /api/ai/menu-review`: 메뉴 알레르기 코드 점검을 수행합니다.
-- `GET /api/admin/system-status`: 시스템 상태를 JSON으로 조회합니다.
-- `GET /api/admin/audit-log`: 감사 로그를 JSON으로 조회합니다.
-
-## 프로젝트 구조
-
-```text
-school-allergy-check/
-├─ admin/       관리자 Flask 서버 구현
-├─ kiosk/       Raspberry Pi RFID 키오스크 클라이언트
-├─ core/        공통 도메인/Google Sheets 유틸리티
-├─ services/    AI, OCR, Sheets 연동 서비스
-├─ config/      설정 예시 파일
-├─ data/        알레르기 사전 등 정적 데이터
-├─ docs/        배포, 보안, 구조 문서
-├─ scripts/     실행/배포 보조 스크립트
-├─ static/      CSS, JS, 이미지, 프로필 사진 등 정적 파일
-├─ templates/   Flask/Jinja 화면 템플릿
-├─ uploads/     업로드 파일 저장 위치
-├─ runtime/     로그, pid, 임시 실행 파일 위치
-├─ app_admin.py 루트 호환 관리자 실행 파일
-├─ app_kiosk.py 루트 호환 키오스크 실행 파일
-├─ wsgi.py      Render/Gunicorn 진입점
-└─ render.yaml  Render 배포 설정
-```
 
 자세한 구조는 `docs/PROJECT_STRUCTURE.md`를 참고하세요.
 
-## 로컬 실행
-
-1. `config/local_secrets.example.bat`를 `config/local_secrets.bat`로 복사합니다.
-2. Google Sheets ID, API 키, 토큰 등 로컬 비밀값을 채웁니다.
-3. Google 서비스 계정 파일을 `config/service_account.json`에 둡니다.
-4. 아래 명령 중 하나로 실행합니다.
-
-```bat
-server_gui.bat
-```
-
-```powershell
-python app_admin.py
-```
 
 키오스크 클라이언트만 실행할 때:
 
@@ -215,57 +159,14 @@ pip install -r requirements.txt
 
 자세한 배포 방법은 `docs/DEPLOYMENT.md`를 참고하세요.
 
-## 필요한 비밀 설정
-
-배포 환경에는 다음 값을 설정합니다.
-
-- `FLASK_SECRET_KEY`
-- `KIOSK_SCAN_API_TOKEN`
-- `DEFAULT_STUDENT_PASSWORD`
-- `OPENAI_API_KEY`
-- `MENU_SHEET_ID`
-- `STUDENT_SHEET_ID`
-- `LOGIN_SHEET_ID`
-- `LOG_SHEET_ID`
-- `PUBLIC_ADMIN_URL`
-- `RFID_DASHBOARD_URL`
-- `SERVICE_ACCOUNT_JSON_B64` 또는 `SERVICE_ACCOUNT_JSON`
-
-다음 파일은 GitHub에 올리면 안 됩니다.
-
-- `config/local_secrets.bat`
-- `config/service_account.json`
-- `.env`, `.env.*`
-- Google service account JSON
-- OpenAI API Key
-- ngrok token
-- `runtime/`
-- `uploads/`
-- 생성된 Raspberry Pi 배포 번들
-
 ## 버전별 변경 내역
 
 ### v5.3.1.0
 
 - Gentelella v4 스타일을 참고해 관리자 UI를 대시보드형 구조로 개편했습니다.
-- 공통 관리자 레이아웃, 사이드바, 상단바, 카드, 테이블, 배지, 차트 스타일을 정리했습니다.
-- 관리자 홈, 학생관리, 급식관리, 급식로그, AI급식추가, AI안전도우미, 휴지통 화면을 새 UI에 맞게 재구성했습니다.
-- 알림센터, 시스템 상태 페이지, 감사 로그 화면을 추가했습니다.
-- AI급식 저장과 학생 대량 등록 일부 작업을 백그라운드 재시도 방식으로 보강했습니다.
-- 작업 완료 시 우측 상단 알림과 사이드바 new/count 표시가 뜨도록 개선했습니다.
-- 관리자 프로필 사진 업로드, 원형 크롭, 회전, 저장 기능을 추가했습니다.
-- 다크모드, 축소 사이드바, 스크롤바, 글꼴/굵기 등 UI 세부 스타일을 다듬었습니다.
-- 관리자 내부 역할 분리는 제거하고, 관리자 계정은 동일한 관리자 권한으로 동작하도록 정리했습니다.
-- `/kiosk` 체크시스템은 기존 동작을 유지했습니다.
-
 ### v5.2.1.0
 
 - 기능 변경 없이 프로젝트 구조를 역할별 폴더로 정리했습니다.
-- 관리자 서버는 `admin/`, 키오스크/RFID는 `kiosk/`, 공통 로직은 `core/`, AI/OCR/Sheets 로직은 `services/`로 분리했습니다.
-- 루트의 `app_admin.py`, `app_kiosk.py`, `server_gui.py`는 기존 실행 경로가 깨지지 않도록 호환 launcher로 유지했습니다.
-- `.gitignore`, `.dockerignore`를 정리해 비밀 파일, 업로드, 런타임 로그, 캐시, 배포 번들이 Git에 포함되지 않도록 했습니다.
-- `docs/PROJECT_STRUCTURE.md`, `docs/DEPLOYMENT.md`, `docs/SECURITY_DEPLOYMENT.md`, `docs/AI_SETUP.md` 문서를 정리했습니다.
-- Render 실행 명령과 로컬 실행 방식이 유지되도록 `wsgi.py`와 경로를 점검했습니다.
 
 ### v5.1.1.0
 
@@ -273,10 +174,6 @@ pip install -r requirements.txt
 - 관리자 서버, 학생/급식 관리, RFID 체크, AI 기능의 기존 데모 동작을 유지합니다.
 - 이후 v5.2 구조 정리와 v5.3 UI 개편의 기준점으로 사용합니다.
 
-### v4.1.1.0
-
-- v5 이전 데모 보존용으로 사용했던 기준 버전입니다.
-- 현재는 v5.1.1.0이 데모 기준 역할을 대신합니다.
 
 ## 개발 원칙
 

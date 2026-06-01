@@ -81,8 +81,8 @@
       const barHeight = (chartHeight * value) / max;
       const y = padding.top + chartHeight - barHeight;
       const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
-      gradient.addColorStop(0, "#5b8def");
-      gradient.addColorStop(1, "#4bb99f");
+      gradient.addColorStop(0, "#8fb7df");
+      gradient.addColorStop(1, "#74c4b2");
       ctx.fillStyle = gradient;
       ctx.fillRect(x, y, barWidth, barHeight || 2);
 
@@ -97,7 +97,7 @@
     const { ctx, width, height } = sized(canvas);
     const values = Array.isArray(data.values) ? data.values.map((value) => Number(value || 0)) : [];
     const labels = Array.isArray(data.labels) ? data.labels : [];
-    const colors = data.colors || ["#47b881", "#e55353", "#f0ad4e", "#6c7ae0"];
+    const colors = data.colors || ["#55b69d", "#d96f73", "#e2aa55", "#7f8ecf"];
     const total = values.reduce((sum, value) => sum + value, 0);
 
     if (!total) {
@@ -129,7 +129,13 @@
     labels.forEach((label, index) => {
       const y = 48 + index * 24;
       ctx.fillStyle = colors[index % colors.length];
-      ctx.fillRect(width * 0.66, y - 9, 9, 9);
+      if (typeof ctx.roundRect === "function") {
+        ctx.beginPath();
+        ctx.roundRect(width * 0.66, y - 9, 9, 9, 2);
+        ctx.fill();
+      } else {
+        ctx.fillRect(width * 0.66, y - 9, 9, 9);
+      }
       ctx.fillStyle = "#475467";
       ctx.fillText(`${label} ${values[index] || 0}`, width * 0.66 + 16, y);
     });

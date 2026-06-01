@@ -161,7 +161,89 @@ body:not(.light-mode).admin-v5 .meal-analysis-dialog{
 }
 body:not(.light-mode).admin-v5 .modal-backdrop{background:rgba(5,10,18,.72)!important;backdrop-filter:blur(4px)}
 
+/* Account modal: make the form area readable and visually separated */
+.admin-v5 #myAccountModal .modal-card,
+.admin-v5 #myAccountModal .modal,
+.admin-v5 #myAccountModal [role="dialog"]{
+  width:min(940px,calc(100vw - 48px))!important;
+  max-height:86vh!important;
+  overflow:auto!important;
+  padding:22px!important;
+  border-radius:12px!important;
+  background:var(--fix-card)!important;
+  color:var(--fix-text)!important;
+  border:1px solid var(--fix-line)!important;
+  box-shadow:0 26px 90px rgba(15,23,42,.32)!important;
+}
+.admin-v5 #myAccountModal .profile-uploader{
+  display:grid!important;
+  grid-template-columns:auto minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:16px!important;
+  margin:0 0 18px!important;
+  padding:16px!important;
+  border:1px solid var(--fix-line)!important;
+  border-radius:12px!important;
+  background:linear-gradient(135deg,rgba(71,184,157,.16),rgba(79,142,220,.08))!important;
+  color:var(--fix-text)!important;
+}
+.admin-v5 #myAccountModal .profile-uploader>div:nth-child(2){min-width:0!important;display:grid!important;gap:7px!important}
+.admin-v5 #myAccountModal .profile-uploader strong{color:var(--fix-text)!important;font-size:15px!important;font-weight:900!important}
+.admin-v5 #myAccountModal .profile-uploader small{color:var(--fix-muted)!important;line-height:1.45!important}
+.admin-v5 #myAccountModal .profile-uploader input[type="file"]{
+  justify-self:end!important;
+  max-width:260px!important;
+  padding:9px!important;
+  background:var(--fix-card)!important;
+  border:1px solid var(--fix-line)!important;
+  border-radius:8px!important;
+}
+.admin-v5 #myAccountModal .profile-preview,
+.admin-v5 #profilePicturePreview{
+  width:76px!important;
+  height:76px!important;
+  border-radius:999px!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+  background:#66c5ad!important;
+  color:#fff!important;
+  font-size:24px!important;
+  font-weight:900!important;
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.34)!important;
+}
+.admin-v5 #myAccountModal .profile-preview img,
+.admin-v5 #profilePicturePreview img{
+  width:100%!important;
+  height:100%!important;
+  display:block!important;
+  object-fit:cover!important;
+  border-radius:inherit!important;
+}
+.admin-v5 #myAccountModal input:not([type="file"]),
+.admin-v5 #myAccountModal select,
+.admin-v5 #myAccountModal textarea{
+  width:100%!important;
+  min-height:44px!important;
+  margin:6px 0 12px!important;
+  background:var(--fix-card-soft)!important;
+  color:var(--fix-text)!important;
+  border:1px solid var(--fix-line)!important;
+  border-radius:8px!important;
+}
+.admin-v5 #myAccountModal .button-row,
+.admin-v5 #myAccountModal .modal-footer{
+  margin-top:12px!important;
+  display:flex!important;
+  justify-content:flex-end!important;
+  gap:10px!important;
+}
+
 @media(max-width:1180px){
   .admin-v5 .dashboard-grid,
   .admin-v5 .dashboard-grid.equal{grid-template-columns:1fr!important}
+}
+@media(max-width:760px){
+  .admin-v5 #myAccountModal .profile-uploader{grid-template-columns:1fr!important;justify-items:start!important}
+  .admin-v5 #myAccountModal .profile-uploader input[type="file"]{justify-self:stretch!important;max-width:100%!important}
 }

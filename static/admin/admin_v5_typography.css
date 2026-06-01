@@ -48,6 +48,31 @@
   line-height: 1.5;
 }
 
+.admin-v5 .admin-sidebar,
+.admin-v5 .gentelella-nav,
+.admin-v5 .collapsed-icon-nav {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.admin-v5 .admin-sidebar::-webkit-scrollbar,
+.admin-v5 .gentelella-nav::-webkit-scrollbar,
+.admin-v5 .collapsed-icon-nav::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.admin-v5 .admin-sidebar {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+body.sidebar-collapsed.admin-v5 .admin-sidebar,
+body.sidebar-collapsed.admin-v5 .collapsed-icon-nav {
+  overflow: hidden;
+}
+
 .admin-workflow-toast-stack {
   position: fixed;
   top: 72px;

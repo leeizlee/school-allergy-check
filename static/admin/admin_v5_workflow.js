@@ -111,6 +111,23 @@
     if (!next.path) next.path = "/notifications";
     if (!next.kind) next.kind = "ai";
     if (!next.icon) next.icon = "AI";
+    const labels = {
+      meal_ai: "AI급식추가",
+      ai_tools: "AI 안전상황실",
+      ai_daily: "오늘 위험 브리핑",
+      ai_student: "학생별 안전계획",
+      ai_menu: "메뉴 코드 점검",
+      menu_manage: "급식관리",
+      student_manage: "학생관리",
+      lunch_log: "급식로그",
+    };
+    const label = labels[next.target];
+    const title = String(next.title || "");
+    if (label && title && !title.includes(" - ")) {
+      if (title.includes("실패")) next.title = `${label} - 작업 실패`;
+      else if (title.includes("대기")) next.title = `${label} - 작업 대기`;
+      else if (title.includes("완료")) next.title = `${label} - 분석 완료`;
+    }
     return next;
   }
 
@@ -274,44 +291,6 @@
     });
   }
 
-  function wrapAiResultFetchToasts() {
-    if (!window.fetch || window.__adminWorkflowFetchWrapped) return;
-    window.__adminWorkflowFetchWrapped = true;
-    const nativeFetch = window.fetch.bind(window);
-    window.fetch = async function (...args) {
-      const response = await nativeFetch(...args);
-      const url = String(args[0]?.url || args[0] || "");
-      const map = [
-        ["/api/ai/safety-plan", "ai_student", "학생별 안전계획 - 분석 완료", "/admin/ai-tools/student-plan"],
-        ["/api/ai/daily-brief", "ai_daily", "오늘 위험 브리핑 - 분석 완료", "/admin/ai-tools/daily-brief"],
-        ["/api/ai/menu-review", "ai_menu", "메뉴 코드 점검 - 분석 완료", "/admin/ai-tools/menu-review"],
-      ];
-      const match = map.find(([path]) => url.includes(path));
-      if (match && response.ok) {
-        response
-          .clone()
-          .json()
-          .then((data) => {
-            if (!data || data.ok === false) return;
-            const item = {
-              id: `${match[1]}:${Date.now()}`,
-              target: match[1],
-              path: match[3],
-              icon: "AI",
-              title: match[2],
-              detail: "요청한 AI 분석 결과가 준비됐어.",
-              time: nowTime(),
-              kind: "ai",
-            };
-            if (typeof window.registerAdminNotification === "function") window.registerAdminNotification(item);
-            else showWorkflowToast(item);
-          })
-          .catch(() => {});
-      }
-      return response;
-    };
-  }
-
   function installStudentImportTracking() {
     if (!window.fetch || window.__adminStudentImportTracking) return;
     window.__adminStudentImportTracking = true;
@@ -350,7 +329,6 @@
     wrapRegisterNotification();
     window.setTimeout(wrapRegisterNotification, 300);
     window.setTimeout(wrapRegisterNotification, 1200);
-    wrapAiResultFetchToasts();
     installStudentImportTracking();
     installMealSaveAsync();
     refreshServerToasts();

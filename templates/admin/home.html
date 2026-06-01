@@ -1,6 +1,7 @@
 {% extends "base_admin.html" %}
 {% block page_actions %}{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin/admin_ui_polish.css') }}">
 {% if dashboard.stats.today_danger_count %}
 <div class="alert-panel danger"><span class="alert-icon">!</span><div><strong>오늘 위험 감지 {{ dashboard.stats.today_danger_count }}건</strong><p>최근 스캔 로그와 위험 가능 메뉴를 먼저 확인해 주세요.</p></div></div>
 {% else %}
@@ -42,4 +43,5 @@
   <article class="panel panel-wide"><div class="panel-title"><div><h2>최근 활동</h2><p>급식실 RFID 체크와 안전 판정 흐름</p></div><a class="btn btn-light" href="{{ url_for('lunch_log_page') }}">전체 로그</a></div><div class="activity-list gentelella-activity">{% if dashboard.recent_logs %}{% for row in dashboard.recent_logs %}<div class="activity-row"><span class="activity-avatar avatar-tone-{{ loop.index0 % 6 }} {% if row.result == '경고' %}danger{% elif row.result == 'OK' %}safe{% else %}warn{% endif %}">{{ (row.name or row.rfid_id or 'RF')[:2] }}</span><div><strong>{{ row.name or row.rfid_id or '미등록 RFID' }}</strong><small>{{ row.result or '-' }} 판정 · {{ row.hit_names or '위험 없음' }}</small></div><time>{{ row.scanned_at or '-' }}</time></div>{% endfor %}{% else %}<div class="empty-state"><strong>아직 표시할 로그가 없습니다.</strong><p>키오스크에서 RFID 스캔이 발생하면 이곳에 표시됩니다.</p></div>{% endif %}</div></article>
   <article class="panel"><div class="panel-title"><div><h2>시스템 상태</h2><p>운영 준비 상태 요약</p></div></div><div class="item-list">{% for item in dashboard.system_status %}<div class="list-row compact"><div><strong>{{ item.label }}</strong><small>{{ item.value }}</small></div><span class="badge {{ item.kind }}">{{ item.value }}</span></div>{% endfor %}</div></article>
 </section>
+<script src="{{ url_for('static', filename='admin/admin_ui_polish.js') }}"></script>
 {% endblock %}

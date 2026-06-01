@@ -148,16 +148,34 @@
     };
   }
 
+  function normalizeText(text) {
+    return String(text || "").replace(/\s+/g, "");
+  }
+
+  function cleanupDuplicateNotificationLinks(root) {
+    const links = $all("a.nav-link", root || document).filter(function (link) {
+      return normalizeText(link.textContent).includes("알림센터");
+    });
+    links.forEach(function (link, index) {
+      if (index > 0) link.remove();
+    });
+  }
+
   function installSidebarNotificationLink() {
+    cleanupDuplicateNotificationLinks(document);
     const dashboards = document.querySelector(".gentelella-nav .nav-group .nav-children");
-    if (dashboards && !dashboards.querySelector("[data-polish-notification-link]")) {
-      const link = document.createElement("a");
-      link.className = "nav-link";
-      link.href = "/admin/notifications";
-      link.setAttribute("data-polish-notification-link", "1");
-      link.innerHTML = '<span class="nav-bullet"></span>알림센터';
-      dashboards.appendChild(link);
-      if (location.pathname === "/admin/notifications" || location.pathname.includes("notification")) link.classList.add("active");
+    if (dashboards) {
+      const existing = $all("a.nav-link", dashboards).some(function (link) {
+        return normalizeText(link.textContent).includes("알림센터") || link.href.endsWith("/admin/notifications");
+      });
+      if (!existing) {
+        const link = document.createElement("a");
+        link.className = "nav-link";
+        link.href = "/admin/notifications";
+        link.setAttribute("data-polish-notification-link", "1");
+        link.innerHTML = '<span class="nav-bullet"></span>알림센터';
+        dashboards.appendChild(link);
+      }
     }
 
     const collapsed = document.querySelector(".collapsed-icon-nav");
@@ -171,7 +189,6 @@
       link.innerHTML = '<svg><use href="#i-bell"></use></svg>';
       const firstDivider = collapsed.querySelector(".collapsed-icon-divider");
       collapsed.insertBefore(link, firstDivider || collapsed.children[2] || null);
-      if (location.pathname === "/admin/notifications" || location.pathname.includes("notification")) link.classList.add("active");
     }
   }
 

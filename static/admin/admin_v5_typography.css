@@ -50,14 +50,22 @@
 
 .admin-v5 .admin-sidebar,
 .admin-v5 .gentelella-nav,
-.admin-v5 .collapsed-icon-nav {
+.admin-v5 .collapsed-icon-nav,
+body.admin-v5,
+body.admin-v5 .admin-main,
+body.admin-v5 .page,
+body.admin-v5 .notification-list {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
 .admin-v5 .admin-sidebar::-webkit-scrollbar,
 .admin-v5 .gentelella-nav::-webkit-scrollbar,
-.admin-v5 .collapsed-icon-nav::-webkit-scrollbar {
+.admin-v5 .collapsed-icon-nav::-webkit-scrollbar,
+body.admin-v5::-webkit-scrollbar,
+body.admin-v5 .admin-main::-webkit-scrollbar,
+body.admin-v5 .page::-webkit-scrollbar,
+body.admin-v5 .notification-list::-webkit-scrollbar {
   width: 0;
   height: 0;
   display: none;

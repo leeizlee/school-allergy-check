@@ -2,6 +2,7 @@
   const notificationStoreKey = "allergySafeClientNotifications";
   const readStoreKey = "allergySafeReadNotifications";
   const aiJobStoreKey = "allergySafeAiMealJobs";
+  const notificationTargets = "notifications lunch_log meal_ai ai_tools ai_daily ai_student ai_menu student_manage menu_manage system_status audit_log";
 
   function readStore(key, fallback) {
     try {
@@ -94,7 +95,7 @@
   }
 
   function notificationHtml(item, isRead) {
-    const path = item.path || "/notifications";
+    const path = item.path || "/admin/notifications";
     return `<a class="notification-item ${isRead ? "" : "unread"}" href="${escapeHtml(path)}" data-notification-id="${escapeHtml(item.id)}" data-notification-target="${escapeHtml(item.target || "notifications")}">
       <span class="notification-icon ${escapeHtml(item.kind || "info")}">${escapeHtml(item.icon || "N")}</span>
       <div><strong>${escapeHtml(item.title || "알림")}</strong><p>${escapeHtml(item.detail || "")}</p><time>${escapeHtml(item.time || "")}</time></div>
@@ -186,21 +187,66 @@
     parent.querySelector(".chevron")?.insertAdjacentHTML("beforebegin", categoryBadge(targets));
   }
 
+  function isNotificationPath(path) {
+    return path === "/notifications" || path === "/admin/notifications";
+  }
+
+  function isNotificationLink(link) {
+    const href = link.getAttribute("href") || "";
+    let path = href;
+    try {
+      path = new URL(href, window.location.origin).pathname;
+    } catch (error) {}
+    const label = String(link.textContent || link.title || link.getAttribute("aria-label") || "").replace(/\s+/g, "");
+    return link.dataset.navId === "notifications" || isNotificationPath(path) || label.includes("알림센터");
+  }
+
+  function normalizeNotificationLinks() {
+    const sidebarLinks = Array.from(document.querySelectorAll(".gentelella-nav a.nav-link")).filter(isNotificationLink);
+    sidebarLinks.forEach((link, index) => {
+      if (index > 0) link.remove();
+    });
+    const collapsedLinks = Array.from(document.querySelectorAll(".collapsed-icon-nav a.collapsed-icon-link")).filter(isNotificationLink);
+    collapsedLinks.forEach((link, index) => {
+      if (index > 0) link.remove();
+    });
+    return {
+      sidebar: sidebarLinks[0] && sidebarLinks[0].isConnected ? sidebarLinks[0] : null,
+      collapsed: collapsedLinks[0] && collapsedLinks[0].isConnected ? collapsedLinks[0] : null,
+    };
+  }
+
+  function activateNotificationLink(link) {
+    if (!link) return;
+    const current = isNotificationPath(window.location.pathname);
+    link.classList.toggle("active", current);
+    const group = link.closest(".nav-group");
+    if (group && current) {
+      group.classList.add("open");
+      group.querySelector("[data-nav-toggle]")?.setAttribute("aria-expanded", "true");
+    }
+  }
+
   function enhanceSidebar() {
     const lunchLink = document.querySelector('a[href="/lunch-log"]');
     if (lunchLink && !lunchLink.querySelector(".js-count-badge")) {
       lunchLink.insertAdjacentHTML("beforeend", countBadge("lunch_log"));
     }
-    ensureCategoryBadge(lunchLink?.closest(".nav-group"), "lunch_log notifications");
-    if (lunchLink && !document.querySelector('a[href="/notifications"]')) {
-      lunchLink.insertAdjacentHTML("afterend", `<a class="nav-link" href="/notifications"><span class="nav-bullet"></span>알림센터${countBadge("notifications lunch_log meal_ai ai_tools ai_daily ai_student ai_menu student_manage menu_manage system_status audit_log")}</a>`);
+    ensureCategoryBadge(lunchLink?.closest(".nav-group"), `lunch_log ${notificationTargets}`);
+
+    const notificationLinks = normalizeNotificationLinks();
+    const notificationLink = notificationLinks.sidebar;
+    if (notificationLink) {
+      notificationLink.dataset.navId = "notifications";
+      notificationLink.dataset.targets = notificationTargets;
+      if (!notificationLink.querySelector(".js-count-badge")) {
+        notificationLink.insertAdjacentHTML("beforeend", countBadge(notificationTargets));
+      }
+      activateNotificationLink(notificationLink);
     }
-    const notificationLink = document.querySelector('a[href="/notifications"]');
-    if (notificationLink && window.location.pathname === "/notifications") {
-      const group = notificationLink.closest(".nav-group");
-      notificationLink.classList.add("active");
-      group?.classList.add("open");
-      group?.querySelector("[data-nav-toggle]")?.setAttribute("aria-expanded", "true");
+    if (notificationLinks.collapsed) {
+      notificationLinks.collapsed.dataset.navId = "notifications";
+      activateNotificationLink(notificationLinks.collapsed);
     }
 
     [
@@ -347,7 +393,7 @@
     setInterval(pollAiJobs, 5000);
 
     const path = window.location.pathname;
-    if (path === "/notifications") setTimeout(() => markTargetRead(), 500);
+    if (isNotificationPath(path)) setTimeout(() => markTargetRead(), 500);
     else if (path === "/lunch-log") setTimeout(() => markTargetRead("lunch_log"), 500);
     else if (path === "/student-manage") setTimeout(() => markTargetRead("student_manage"), 500);
     else if (path === "/menu-manage") setTimeout(() => markTargetRead("menu_manage"), 500);

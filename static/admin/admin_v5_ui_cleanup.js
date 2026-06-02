@@ -44,6 +44,47 @@
     if (count) count.textContent = String(document.querySelectorAll(".student-card:not([style*='display: none'])").length);
   }
 
+  function normalizeText(value) {
+    return String(value || "").replace(/\s+/g, "");
+  }
+
+  function isNotificationPath(path) {
+    return path === "/notifications" || path === "/admin/notifications";
+  }
+
+  function isNotificationLink(link) {
+    var href = link.getAttribute("href") || "";
+    var path = href;
+    try {
+      path = new URL(href, window.location.origin).pathname;
+    } catch (error) {}
+    var label = normalizeText(link.textContent || link.title || link.getAttribute("aria-label") || "");
+    return link.dataset.navId === "notifications" || isNotificationPath(path) || label.indexOf("알림센터") >= 0;
+  }
+
+  function normalizeNotificationNav() {
+    var sidebarLinks = Array.from(document.querySelectorAll(".gentelella-nav a.nav-link")).filter(isNotificationLink);
+    sidebarLinks.forEach(function (link, index) {
+      if (index > 0) link.remove();
+    });
+    var collapsedLinks = Array.from(document.querySelectorAll(".collapsed-icon-nav a.collapsed-icon-link")).filter(isNotificationLink);
+    collapsedLinks.forEach(function (link, index) {
+      if (index > 0) link.remove();
+    });
+    var current = isNotificationPath(window.location.pathname);
+    [sidebarLinks[0], collapsedLinks[0]].forEach(function (link) {
+      if (!link || !link.isConnected) return;
+      link.classList.toggle("active", current);
+      if (!current) return;
+      var group = link.closest(".nav-group");
+      if (group) {
+        group.classList.add("open");
+        var toggle = group.querySelector("[data-nav-toggle]");
+        if (toggle) toggle.setAttribute("aria-expanded", "true");
+      }
+    });
+  }
+
   function polishAccountModal() {
     var modal = document.getElementById("myAccountModal");
     if (!modal) return;
@@ -53,6 +94,7 @@
 
   function boot() {
     injectAvatarFixStyle();
+    normalizeNotificationNav();
     removeBlankStudentCards();
     polishAccountModal();
     var previousOpen = window.openMyAccountModal;
@@ -61,6 +103,7 @@
         previousOpen.apply(this, arguments);
         setTimeout(function () {
           injectAvatarFixStyle();
+          normalizeNotificationNav();
           polishAccountModal();
           removeBlankStudentCards();
         }, 0);
@@ -68,6 +111,8 @@
       wrapped.__cleanupWrapped = true;
       window.openMyAccountModal = wrapped;
     }
+    setTimeout(normalizeNotificationNav, 0);
+    setTimeout(normalizeNotificationNav, 300);
   }
 
   if (document.readyState === "loading") {

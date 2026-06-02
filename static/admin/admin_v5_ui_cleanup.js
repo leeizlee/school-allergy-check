@@ -1,6 +1,20 @@
 (function () {
   "use strict";
 
+  function injectAvatarFixStyle() {
+    if (document.getElementById("admin-v5-avatar-fix-style")) return;
+    var style = document.createElement("style");
+    style.id = "admin-v5-avatar-fix-style";
+    style.textContent = ""
+      + ".admin-v5 .topbar-avatar,.admin-v5 .avatar-button,.admin-v5 .profile-preview{aspect-ratio:1/1;border-radius:999px!important;overflow:hidden!important;display:inline-grid;place-items:center;padding:0!important;line-height:1!important;flex:0 0 auto;}"
+      + ".admin-v5 .topbar-avatar,.admin-v5 .avatar-button{width:38px!important;height:38px!important;min-width:38px!important;max-width:38px!important;background:#55c3aa;color:#fff;}"
+      + ".admin-v5 .sidebar-account .avatar-button{width:42px!important;height:42px!important;min-width:42px!important;max-width:42px!important;}"
+      + ".admin-v5 .topbar-avatar .avatar-img,.admin-v5 .avatar-button .avatar-img,.admin-v5 .profile-preview .avatar-img,.admin-v5 .profile-preview img{display:block!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:cover!important;object-position:center center!important;border-radius:999px!important;}"
+      + ".admin-v5 .profile-upload-card .profile-preview{width:74px!important;height:74px!important;min-width:74px!important;}"
+      + ".admin-v5 .profile-edit-preview .profile-preview{width:54px!important;height:54px!important;min-width:54px!important;}";
+    document.head.appendChild(style);
+  }
+
   function textOf(root, selector) {
     var node = root.querySelector(selector);
     return node ? String(node.textContent || "").trim() : "";
@@ -34,9 +48,11 @@
     var modal = document.getElementById("myAccountModal");
     if (!modal) return;
     modal.classList.add("account-modal-polished");
+    injectAvatarFixStyle();
   }
 
   function boot() {
+    injectAvatarFixStyle();
     removeBlankStudentCards();
     polishAccountModal();
     var previousOpen = window.openMyAccountModal;
@@ -44,6 +60,7 @@
       var wrapped = function () {
         previousOpen.apply(this, arguments);
         setTimeout(function () {
+          injectAvatarFixStyle();
           polishAccountModal();
           removeBlankStudentCards();
         }, 0);

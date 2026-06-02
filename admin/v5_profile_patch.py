@@ -177,12 +177,21 @@ def _inject_profile_assets(response):
         html = response.get_data(as_text=True)
     except Exception:
         return response
-    marker = "admin_v5_profile.js"
-    if "</body>" not in html or marker in html:
-        return response
-    html = html.replace("</body>", '<script src="/static/admin/admin_v5_profile.js"></script></body>')
-    response.set_data(html)
-    response.headers["Content-Length"] = str(len(response.get_data()))
+
+    changed = False
+    if "</head>" in html and "admin_v5_ui_cleanup.css" not in html:
+        html = html.replace("</head>", '<link rel="stylesheet" href="/static/admin/admin_v5_ui_cleanup.css"></head>')
+        changed = True
+    if "</body>" in html and "admin_v5_ui_cleanup.js" not in html:
+        html = html.replace("</body>", '<script src="/static/admin/admin_v5_ui_cleanup.js"></script></body>')
+        changed = True
+    if "</body>" in html and "admin_v5_profile.js" not in html:
+        html = html.replace("</body>", '<script src="/static/admin/admin_v5_profile.js"></script></body>')
+        changed = True
+
+    if changed:
+        response.set_data(html)
+        response.headers["Content-Length"] = str(len(response.get_data()))
     return response
 
 

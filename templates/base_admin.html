@@ -103,11 +103,12 @@
       </a>
       <nav class="side-nav gentelella-nav" aria-label="관리자 메뉴">
         <div class="nav-section">GENERAL</div>
-        <section class="nav-group {% if active_tab in ['admin_home', 'lunch_log'] %}open{% endif %}">
-          <button class="nav-parent" type="button" data-nav-toggle aria-expanded="{% if active_tab in ['admin_home', 'lunch_log'] %}true{% else %}false{% endif %}"><svg><use href="#i-grid"></use></svg><span>Dashboards</span><svg class="chevron"><use href="#i-chevron"></use></svg></button>
+        <section class="nav-group {% if active_tab in ['admin_home', 'lunch_log', 'notifications'] %}open{% endif %}">
+          <button class="nav-parent" type="button" data-nav-toggle aria-expanded="{% if active_tab in ['admin_home', 'lunch_log', 'notifications'] %}true{% else %}false{% endif %}"><svg><use href="#i-grid"></use></svg><span>Dashboards</span><svg class="chevron"><use href="#i-chevron"></use></svg></button>
           <div class="nav-children">
             <a class="nav-link {% if active_tab == 'admin_home' %}active{% endif %}" href="{{ url_for('home') }}"><span class="nav-bullet"></span>관리자 홈</a>
             <a class="nav-link {% if active_tab == 'lunch_log' %}active{% endif %}" href="{{ url_for('lunch_log_page') }}"><span class="nav-bullet"></span>급식로그</a>
+            <a class="nav-link {% if active_tab == 'notifications' %}active{% endif %}" href="{{ url_for('notifications_page') }}" data-nav-id="notifications" data-targets="notifications lunch_log meal_ai ai_tools ai_daily ai_student ai_menu student_manage menu_manage system_status audit_log"><span class="nav-bullet"></span>알림센터<span class="nav-link-count js-count-badge hidden" data-targets="notifications lunch_log meal_ai ai_tools ai_daily ai_student ai_menu student_manage menu_manage system_status audit_log">0</span></a>
           </div>
         </section>
 
@@ -145,6 +146,7 @@
       <nav class="collapsed-icon-nav" aria-label="축소 관리자 메뉴">
         <a class="collapsed-icon-link {% if active_tab == 'admin_home' %}active{% endif %}" href="{{ url_for('home') }}" title="관리자 홈" aria-label="관리자 홈"><svg><use href="#i-grid"></use></svg></a>
         <a class="collapsed-icon-link {% if active_tab == 'lunch_log' %}active{% endif %}" href="{{ url_for('lunch_log_page') }}" title="급식로그" aria-label="급식로그"><svg><use href="#i-activity"></use></svg></a>
+        <a class="collapsed-icon-link {% if active_tab == 'notifications' %}active{% endif %}" href="{{ url_for('notifications_page') }}" title="알림센터" aria-label="알림센터" data-nav-id="notifications"><svg><use href="#i-bell"></use></svg></a>
         <span class="collapsed-icon-divider" aria-hidden="true"></span>
         <a class="collapsed-icon-link {% if active_tab == 'student_manage' %}active{% endif %}" href="{{ url_for('student_manage_page') }}" title="학생관리" aria-label="학생관리"><svg><use href="#i-users"></use></svg></a>
         <a class="collapsed-icon-link {% if active_tab == 'menu_manage' %}active{% endif %}" href="{{ url_for('menu_manage_page') }}" title="급식관리" aria-label="급식관리"><svg><use href="#i-utensils"></use></svg></a>

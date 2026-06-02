@@ -5,23 +5,29 @@
 {% endblock %}
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='admin/admin_theme_fix.css') }}">
+{% set notification_items = notifications|default([], true) %}
 <section class="panel">
   <div class="panel-title">
     <div>
       <h2>운영 알림</h2>
       <p>RFID 인식, 학생/메뉴 변경, AI 분석 완료 같은 확인 항목을 시간순으로 보여줍니다.</p>
     </div>
-    <span class="badge info">{{ notifications|length }}개</span>
+    <span class="badge info">{{ notification_items|length }}개</span>
   </div>
   <div class="notification-page-list" id="notificationPageList">
-    {% if notifications %}
-      {% for item in notifications %}
-      <a class="notification-item" href="{{ item.path|default(url_for('notifications_page')) }}" data-notification-id="{{ item.id|default(loop.index) }}" data-notification-target="{{ item.target|default('notifications') }}">
-        <span class="notification-icon {{ item.kind }}">{{ item.icon }}</span>
+    {% if notification_items %}
+      {% for item in notification_items %}
+      {% set item_path = item.path|default(url_for('notifications_page'), true) %}
+      {% set item_id = item.id|default(loop.index, true) %}
+      {% set item_target = item.target|default('notifications', true) %}
+      {% set item_kind = item.kind|default('info', true) %}
+      {% set item_icon = item.icon|default('N', true) %}
+      <a class="notification-item" href="{{ item_path }}" data-notification-id="{{ item_id }}" data-notification-target="{{ item_target }}">
+        <span class="notification-icon {{ item_kind }}">{{ item_icon }}</span>
         <div>
-          <strong>{{ item.title }}</strong>
-          <p>{{ item.detail }}</p>
-          <time>{{ item.time }}</time>
+          <strong>{{ item.title|default('알림', true) }}</strong>
+          <p>{{ item.detail|default('확인할 운영 알림이 있습니다.', true) }}</p>
+          <time>{{ item.time|default('-', true) }}</time>
         </div>
       </a>
       {% endfor %}

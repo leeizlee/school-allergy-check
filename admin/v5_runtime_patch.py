@@ -178,6 +178,7 @@ def _run_meal_analysis_job(job_id, saved_path, filename, created_by, ocr_hint):
 
 
 @app.get("/notifications")
+@app.get("/admin/notifications")
 def notifications_page():
     ok, response = legacy.require_admin()
     if not ok:

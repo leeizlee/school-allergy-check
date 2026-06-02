@@ -80,36 +80,6 @@
       if (!file) return;
       updateProfilePreview(file, preview, status);
     }, true);
-
-    document.addEventListener("click", async function (event) {
-      const button = event.target.closest("#profilePictureSaveBtn,button");
-      if (!button) return;
-      const text = (button.textContent || "").trim();
-      const looksLikeProfileSave = button.id === "profilePictureSaveBtn" || (text.includes("사진 저장") && button.closest(".profile-uploader,#myAccountModal"));
-      if (!looksLikeProfileSave) return;
-      const modal = button.closest(".modal-backdrop,.modal,.modal-card") || document;
-      const input = modal.querySelector("#profilePictureInput,input[type='file'][accept*='image']");
-      const preview = modal.querySelector("#profilePicturePreview,.profile-preview,.crop-preview,.profile-crop-preview,.profile-preview-surface");
-      const status = modal.querySelector("#profilePictureStatus,.profile-status,.crop-status") || button.parentElement?.querySelector("small");
-      const file = input && input.files && input.files[0];
-      if (!file) return;
-      event.preventDefault();
-      event.stopPropagation();
-      setStatus(status, "프로필 사진 저장 중...", true);
-      try {
-        const body = new FormData();
-        body.append("picture", file);
-        const res = await fetch("/api/my-account/picture", { method: "POST", body: body });
-        const contentType = res.headers.get("content-type") || "";
-        const data = contentType.includes("application/json") ? await res.json() : { ok: false, error: await res.text() };
-        if (!res.ok || !data.ok) throw new Error(data.error || "프로필 사진 저장 실패");
-        syncAvatarNodes(data.picture);
-        if (preview) preview.innerHTML = '<img class="profile-live-preview" src="' + data.picture + '" alt="프로필">';
-        setStatus(status, "프로필 사진이 저장됐어.", true);
-      } catch (error) {
-        setStatus(status, error.message || "프로필 사진 저장 실패", false);
-      }
-    }, true);
   }
 
   function installCardSelectionSync() {
@@ -152,44 +122,50 @@
     return String(text || "").replace(/\s+/g, "");
   }
 
+  function isNotificationHref(href) {
+    try {
+      const path = new URL(href, window.location.origin).pathname;
+      return path === "/notifications" || path === "/admin/notifications";
+    } catch (error) {
+      return href === "/notifications" || href === "/admin/notifications";
+    }
+  }
+
+  function isNotificationLink(link) {
+    const href = link.getAttribute("href") || "";
+    const label = normalizeText(link.textContent || link.title || link.getAttribute("aria-label") || "");
+    return link.dataset.navId === "notifications" || isNotificationHref(href) || label.includes("알림센터");
+  }
+
   function cleanupDuplicateNotificationLinks(root) {
-    const links = $all("a.nav-link", root || document).filter(function (link) {
-      return normalizeText(link.textContent).includes("알림센터");
+    const sidebarLinks = $all(".gentelella-nav a.nav-link", root || document).filter(isNotificationLink);
+    sidebarLinks.forEach(function (link, index) {
+      if (index > 0) link.remove();
     });
-    links.forEach(function (link, index) {
+
+    const collapsedLinks = $all(".collapsed-icon-nav a.collapsed-icon-link", root || document).filter(isNotificationLink);
+    collapsedLinks.forEach(function (link, index) {
       if (index > 0) link.remove();
     });
   }
 
+  function syncNotificationActiveState(link) {
+    if (!link) return;
+    const isCurrent = window.location.pathname === "/notifications" || window.location.pathname === "/admin/notifications";
+    link.classList.toggle("active", isCurrent);
+    const group = link.closest(".nav-group");
+    if (group && isCurrent) {
+      group.classList.add("open");
+      group.querySelector("[data-nav-toggle]")?.setAttribute("aria-expanded", "true");
+    }
+  }
+
   function installSidebarNotificationLink() {
     cleanupDuplicateNotificationLinks(document);
-    const dashboards = document.querySelector(".gentelella-nav .nav-group .nav-children");
-    if (dashboards) {
-      const existing = $all("a.nav-link", dashboards).some(function (link) {
-        return normalizeText(link.textContent).includes("알림센터") || link.href.endsWith("/admin/notifications");
-      });
-      if (!existing) {
-        const link = document.createElement("a");
-        link.className = "nav-link";
-        link.href = "/admin/notifications";
-        link.setAttribute("data-polish-notification-link", "1");
-        link.innerHTML = '<span class="nav-bullet"></span>알림센터';
-        dashboards.appendChild(link);
-      }
-    }
-
-    const collapsed = document.querySelector(".collapsed-icon-nav");
-    if (collapsed && !collapsed.querySelector("[data-polish-notification-link]")) {
-      const link = document.createElement("a");
-      link.className = "collapsed-icon-link";
-      link.href = "/admin/notifications";
-      link.title = "알림센터";
-      link.setAttribute("aria-label", "알림센터");
-      link.setAttribute("data-polish-notification-link", "1");
-      link.innerHTML = '<svg><use href="#i-bell"></use></svg>';
-      const firstDivider = collapsed.querySelector(".collapsed-icon-divider");
-      collapsed.insertBefore(link, firstDivider || collapsed.children[2] || null);
-    }
+    const sidebarLink = $all(".gentelella-nav a.nav-link").find(isNotificationLink);
+    const collapsedLink = $all(".collapsed-icon-nav a.collapsed-icon-link").find(isNotificationLink);
+    syncNotificationActiveState(sidebarLink);
+    syncNotificationActiveState(collapsedLink);
   }
 
   document.addEventListener("DOMContentLoaded", function () {

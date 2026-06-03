@@ -1,4 +1,4 @@
-from flask import Response, request
+from flask import request
 
 from admin.app_admin import app
 
@@ -13,7 +13,10 @@ _FAVICON_LINKS = (
 
 @app.get("/favicon.ico")
 def favicon_ico():
-    return Response(app.send_static_file("favicon.svg").get_data(), mimetype="image/svg+xml")
+    response = app.send_static_file("favicon.svg")
+    response.headers["Content-Type"] = "image/svg+xml"
+    response.headers.setdefault("Cache-Control", "public, max-age=3600")
+    return response
 
 
 @app.after_request

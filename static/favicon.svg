@@ -1,21 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AllergySafe MJ logo">
   <defs>
-    <linearGradient id="bg" x1="12" y1="4" x2="54" y2="60" gradientUnits="userSpaceOnUse">
+    <linearGradient id="mj-bg" x1="10" y1="5" x2="56" y2="60" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#243245"/>
       <stop offset="1" stop-color="#101827"/>
     </linearGradient>
-    <linearGradient id="mint" x1="15" y1="10" x2="51" y2="56" gradientUnits="userSpaceOnUse">
+    <linearGradient id="mj-border" x1="12" y1="8" x2="52" y2="56" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#8BE7D5"/>
       <stop offset="1" stop-color="#4BB99F"/>
     </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="7" stdDeviation="5" flood-color="#07111f" flood-opacity="0.28"/>
+    <filter id="mj-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#07111f" flood-opacity="0.28"/>
     </filter>
   </defs>
-  <rect x="6" y="6" width="52" height="52" rx="14" fill="url(#bg)" filter="url(#shadow)"/>
-  <rect x="11" y="11" width="42" height="42" rx="11" fill="none" stroke="url(#mint)" stroke-width="3.2"/>
-  <path d="M18 42V22h6.2l7.8 9.2 7.8-9.2H46v20h-6.2V31.4L32 40.1l-7.8-8.7V42H18Z" fill="#F8FFFC"/>
-  <path d="M44 19h4v17.3c0 4.9-3.2 8.2-8.2 8.2-2.8 0-5.1-.9-6.8-2.7l3.1-4.1c1 .9 2 1.3 3.2 1.3 2 0 3.1-1.2 3.1-3.4V19Z" fill="#66D2BA"/>
-  <circle cx="18" cy="18" r="2.5" fill="#66D2BA" opacity="0.95"/>
-  <circle cx="47" cy="47" r="2.5" fill="#66D2BA" opacity="0.95"/>
+  <rect x="5" y="5" width="54" height="54" rx="14" fill="url(#mj-bg)" filter="url(#mj-shadow)"/>
+  <rect x="10" y="10" width="44" height="44" rx="11" fill="none" stroke="url(#mj-border)" stroke-width="3"/>
+  <g transform="matrix(0.1383 0 0 0.1383 -60.04 -10.11)">
+    <path fill="#F8FFFC" d="M 741.5 196 L 744.5 236 L 747.5 232 L 748 233.5 L 746 236.5 L 748.5 237 L 769.5 226 L 768.5 228 L 750 239.5 L 751.5 240 L 839.5 218 L 839.5 219 L 758.5 242 L 751 243 Q 749.8 246 753.5 245 L 763 249.5 L 760.5 250 L 747 247 L 752.5 256 L 758.5 255 L 759.5 256 L 772 256 L 772 395.5 Q 770.1 404.6 763.5 409 L 752.5 414 L 492 414 L 492 235 L 564.5 235 L 567.5 234 L 578.5 234 L 580.5 235 L 621.5 273 L 661.5 235 L 680.5 235 L 681.5 234 L 682.5 235 L 703.5 235 Q 704.8 232.8 706 235.5 L 706 251.5 L 707 253.5 L 706 254.5 L 706 344 L 666 344 L 666 286.5 L 664.5 286 L 634.5 316 L 633 316 Q 634.1 318.7 631.5 318 L 621.5 328 L 620.5 327 Q 618.3 327.8 619 325.5 L 577.5 286 L 576 286 L 576 376 L 717.5 376 Q 724.1 375.1 727 370.5 L 729 366.5 L 729 255 L 732 253.5 L 735 249.5 L 735 247 L 708.5 253 L 708.5 252 L 728.5 246 L 732 243.5 L 722 241.5 L 731.5 241 L 733 241.5 L 731.5 239 L 713 228.5 L 714.5 228 L 735.5 238 L 736 236.5 L 733 231.5 L 735 232.5 L 738.5 237 L 741.5 196 Z M 503 241 L 501 243 L 501 407 L 502 407 L 531 407 L 531 244 L 532 243 L 531 241 L 503 241 Z M 739 249 L 735 254 L 735 255 L 740 255 Q 741 250 739 249 Z M 745 249 L 743 251 L 743 255 L 749 255 L 745 249 Z"/>
+  </g>
 </svg>

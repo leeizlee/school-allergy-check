@@ -1,4 +1,5 @@
 from app_admin import app
+from admin import v5_brand_patch  # noqa: F401 - registers favicon route and brand icon links
 from admin import v5_runtime_patch  # noqa: F401 - registers v5 runtime routes
 from admin import v5_ops_patch  # noqa: F401 - registers operations center routes
 from admin import v5_profile_patch  # noqa: F401 - registers profile image storage and crop UI

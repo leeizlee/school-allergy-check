@@ -132,7 +132,7 @@
         resetCrop();
         zoom.value = "1";
         draw(canvas);
-        status.textContent = "드래그로 위치를 맞추고 확대/회전한 뒤 저장해.";
+        status.textContent = "드래그로 위치를 맞추고 확대/회전한 뒤 편집 완료를 눌러줘.";
       };
       image.onerror = function () {
         crop.image = null;
@@ -243,7 +243,7 @@
     backdrop.className = "profile-edit-backdrop";
     backdrop.innerHTML = ""
       + '<section class="profile-edit-modal" role="dialog" aria-modal="true" aria-label="프로필 사진 편집">'
-      + '<header class="profile-edit-head"><div><h2>프로필 사진 편집</h2><p>원형 아바타에 맞게 위치를 조정하고 확대/회전한 뒤 저장해.</p></div><button class="profile-edit-close" id="profileCropCloseBtn" type="button" aria-label="닫기">×</button></header>'
+      + '<header class="profile-edit-head"><div><h2>프로필 사진 편집</h2><p>원형 아바타에 맞게 위치를 조정하고 확대/회전한 뒤 미리보기에 적용해.</p></div><button class="profile-edit-close" id="profileCropCloseBtn" type="button" aria-label="닫기">×</button></header>'
       + '<div class="profile-edit-body">'
       + '<div class="profile-crop-stage" id="profileCropStage"><canvas id="profileCropCanvas" width="360" height="360"></canvas></div>'
       + '<div class="profile-crop-controls">'
@@ -254,7 +254,7 @@
       + '<button class="btn btn-light" type="button" id="profileRotateLeftBtn">왼쪽 회전</button>'
       + '<button class="btn btn-light" type="button" id="profileRotateRightBtn">오른쪽 회전</button>'
       + '<button class="btn btn-light" type="button" id="profileCropCancelBtn">취소</button>'
-      + '<button class="btn btn-primary" type="button" id="profilePictureSaveBtn">사진 임시 저장</button>'
+      + '<button class="btn btn-primary" type="button" id="profilePictureSaveBtn">편집 완료</button>'
       + '</div><small class="profile-crop-status" id="profilePictureStatus">사진을 불러오는 중...</small>'
       + '</div></div></section>';
     document.body.appendChild(backdrop);
@@ -269,8 +269,9 @@
     uploader.dataset.profileUploadEnhanced = "1";
     uploader.className = "profile-uploader profile-upload-card";
     uploader.innerHTML = ""
-      + '<div class="profile-upload-copy"><div class="profile-preview" id="profilePicturePreview">' + avatar(pendingPictureData || currentImage()) + '</div><div><strong>프로필 사진</strong><small>사진을 편집한 뒤 계정관리 저장을 눌러야 실제 적용됩니다.</small></div></div>'
-      + '<div class="profile-upload-actions"><label class="profile-file-button">프로필사진 업로드<input id="profilePictureInput" type="file" accept="image/png,image/jpeg,image/jpg,image/jpe,image/webp,image/gif"></label><small class="profile-upload-status" id="profilePictureStatus">PNG, JPG, WEBP, GIF 이미지를 사용할 수 있어.</small></div>';
+      + '<div class="profile-upload-copy"><div class="profile-preview" id="profilePicturePreview">' + avatar(pendingPictureData || currentImage()) + '</div><div><strong>새 프로필 미리보기</strong><small>편집 완료 후에도 계정관리 저장 전까지는 실제 프로필이 바뀌지 않습니다.</small></div></div>'
+      + '<div class="profile-upload-actions"><label class="profile-file-button">프로필사진 업로드<input id="profilePictureInput" type="file" accept="image/png,image/jpeg,image/jpg,image/jpe,image/webp,image/gif"></label><small class="profile-upload-status" id="profilePictureStatus">PNG, JPG, WEBP, GIF 이미지를 사용할 수 있어.</small></div>'
+      + '<div class="profile-existing-picture"><span>현재 프로필</span><div class="profile-preview profile-existing-preview">' + avatar(currentImage()) + '</div><small>계정관리에서 취소하면 이 사진이 그대로 유지됩니다.</small></div>';
 
     var input = uploader.querySelector("#profilePictureInput");
     var status = uploader.querySelector("#profilePictureStatus");

@@ -19,6 +19,10 @@ def favicon_ico():
     return response
 
 
+# admin.app_admin registers an empty favicon route first; point that endpoint at the v5 logo handler.
+app.view_functions["favicon"] = favicon_ico
+
+
 @app.after_request
 def _inject_brand_icon_links(response):
     content_type = response.headers.get("Content-Type", "")

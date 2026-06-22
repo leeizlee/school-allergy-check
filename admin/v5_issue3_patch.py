@@ -8,7 +8,7 @@ from datetime import datetime
 from functools import wraps
 from pathlib import Path
 
-from flask import jsonify, render_template, request, session, url_for
+from flask import jsonify, render_template, render_template_string, request, session, url_for
 
 from admin import app_admin as legacy
 from admin import v5_admin_renderer
@@ -376,6 +376,43 @@ def _update_scan_state_with_alternatives(result):
 
 
 legacy.update_last_scan_state_from_result = _update_scan_state_with_alternatives
+
+
+def _student_home_with_targeted_menus():
+    ok, response = legacy.require_student()
+    if not ok:
+        return response
+    login_id = _safe_text(session.get("login_id"), 32)
+    student = legacy.get_student_by_student_number(login_id, include_trash=False)
+    today_menus = _menus_for_student(legacy.today_sheet_str(), login_id)
+    student_codes = legacy.parse_codes(student.get("allergy_codes")) if student else set()
+    menu_alerts = []
+    for menu in today_menus:
+        menu_codes = legacy.parse_codes(menu.get("allergy_codes"))
+        matched = sorted(student_codes & menu_codes)
+        menu_alerts.append({
+            "menu_name": menu.get("menu_name"),
+            "allergy_names": menu.get("allergy_names"),
+            "matched_names": ", ".join(legacy.codes_to_names(matched)) if matched else "해당 없음",
+            "has_conflict": bool(matched),
+            "is_alternative": bool(menu.get("is_alternative")),
+            "target": menu.get("for") or "A",
+        })
+    return render_template_string(
+        legacy.STUDENT_HTML,
+        login_name=session.get("login_name", "학생"),
+        login_id=login_id,
+        allergy_map=legacy.ALLERGY_MAP,
+        my_allergy_codes=sorted(student_codes),
+        my_allergy_names=student.get("allergy_names") if student else "없음",
+        menu_alerts=menu_alerts,
+        today_menus=today_menus,
+        rfid_dashboard_url=legacy.RFID_DASHBOARD_URL,
+        public_base_url=legacy.load_public_base_url(),
+    )
+
+
+app.view_functions["student_home_page"] = _student_home_with_targeted_menus
 
 
 @app.get("/admin/ai-tools/history")

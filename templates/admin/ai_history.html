@@ -1,0 +1,42 @@
+{% extends "base_admin.html" %}
+{% block eyebrow %}AI JOB HISTORY{% endblock %}
+{% block page_actions %}<a class="btn btn-outline" href="{{ url_for('review_queue_page') }}">검토 대기함</a><a class="btn btn-primary" href="{{ url_for('ai_tools_page') }}">AI 안전상황실</a>{% endblock %}
+{% block content %}
+<section class="stat-grid">
+  <article class="stat-card ai with-icon"><span class="stat-icon">AI</span><span>전체 작업</span><strong>{{ ai_history|length }}</strong><small>현재 필터 기준 기록</small><div class="mini-bars blue"></div></article>
+  <article class="stat-card safe with-icon"><span class="stat-icon">OK</span><span>완료</span><strong>{{ ai_history|selectattr('status','equalto','done')|list|length }}</strong><small>정상 완료된 분석</small><div class="mini-bars mint"></div></article>
+  <article class="stat-card warn with-icon"><span class="stat-icon">RV</span><span>검토 대기</span><strong>{{ ai_history|selectattr('status','equalto','pending')|list|length }}</strong><small>승인 또는 반려 필요</small><div class="mini-bars amber"></div></article>
+  <article class="stat-card danger with-icon"><span class="stat-icon">!</span><span>실패</span><strong>{{ ai_history|selectattr('status','equalto','error')|list|length }}</strong><small>재확인이 필요한 작업</small><div class="mini-bars red"></div></article>
+</section>
+
+<section class="panel">
+  <div class="panel-title"><div><h2>AI 작업 기록</h2><p>개인정보는 축약해 저장하며, 대체급식 추천은 검토 대기 ID와 연결됩니다.</p></div></div>
+  <div class="issue3-filter-bar">
+    <a class="chip {% if not ai_history_kind %}active{% endif %}" href="{{ url_for('ai_job_history_page') }}">전체</a>
+    {% for key, label in ai_kind_labels.items() %}<a class="chip {% if ai_history_kind == key %}active{% endif %}" href="{{ url_for('ai_job_history_page', kind=key) }}">{{ label }}</a>{% endfor %}
+  </div>
+  <div class="issue3-work-list">
+    {% if ai_history %}
+      {% for item in ai_history %}
+      <details class="issue3-work-item">
+        <summary class="issue3-work-summary">
+          <div><strong>{{ item.title|default('AI 작업') }}</strong><small>{{ item.summary|default('요약 없음') }}</small></div>
+          <div><span class="badge ai">{{ ai_kind_labels.get(item.kind, item.kind or 'AI') }}</span><small>{{ item.created_by|default('-') }}</small></div>
+          <div><span class="badge {% if item.status in ['done','approved'] %}safe{% elif item.status in ['error','rejected'] %}danger{% else %}warn{% endif %}">{{ item.status|default('-') }}</span><small>{{ item.created_at|default('-') }}</small></div>
+          <span aria-hidden="true">⌄</span>
+        </summary>
+        <div class="issue3-detail">
+          {% if item.linked_review_id %}<div class="alert-panel info"><span class="alert-icon">RV</span><div><strong>연결된 검토 작업</strong><p>{{ item.linked_review_id }}</p></div></div>{% endif %}
+          <div class="issue3-detail-grid">
+            <div><h3>입력</h3><pre class="issue3-json">{{ item.input|tojson(indent=2) }}</pre></div>
+            <div><h3>결과</h3><pre class="issue3-json">{{ item.output|tojson(indent=2) }}</pre></div>
+          </div>
+        </div>
+      </details>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state"><strong>표시할 AI 작업 기록이 없습니다.</strong><p>급식 분석이나 AI 안전도우미를 실행하면 이곳에 기록됩니다.</p><a class="btn btn-primary" href="{{ url_for('ai_tools_page') }}">AI 도구 열기</a></div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

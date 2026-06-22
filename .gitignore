@@ -6,6 +6,7 @@ kiosk_secrets.env
 !.env.example
 .venv/
 venv/
+.testdeps/
 runtime/
 uploads/*
 !uploads/.gitkeep

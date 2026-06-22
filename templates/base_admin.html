@@ -123,23 +123,27 @@
         </section>
 
         <div class="nav-section">AI</div>
-        <section class="nav-group {% if active_tab in ['meal_ai', 'ai_tools'] %}open{% endif %}">
-          <button class="nav-parent has-tag" type="button" data-nav-toggle aria-expanded="{% if active_tab in ['meal_ai', 'ai_tools'] %}true{% else %}false{% endif %}"><svg><use href="#i-shield"></use></svg><span>AI Tools</span><span class="nav-tag new">New</span><svg class="chevron"><use href="#i-chevron"></use></svg></button>
+        <section class="nav-group {% if active_tab in ['meal_ai', 'ai_tools', 'ai_history', 'review_queue'] %}open{% endif %}">
+          <button class="nav-parent has-tag" type="button" data-nav-toggle aria-expanded="{% if active_tab in ['meal_ai', 'ai_tools', 'ai_history', 'review_queue'] %}true{% else %}false{% endif %}"><svg><use href="#i-shield"></use></svg><span>AI Tools</span><span class="nav-tag new">New</span><svg class="chevron"><use href="#i-chevron"></use></svg></button>
           <div class="nav-children">
             <a class="nav-link {% if active_tab == 'meal_ai' %}active{% endif %}" href="{{ url_for('meal_upload_page') }}"><span class="nav-bullet"></span>AI급식추가</a>
             <a class="nav-link {% if request.path == url_for('ai_tools_page') %}active{% endif %}" href="{{ url_for('ai_tools_page') }}"><span class="nav-bullet"></span>AI 안전상황실</a>
             <a class="nav-link {% if request.path == url_for('ai_tools_daily_brief_page') %}active{% endif %}" href="{{ url_for('ai_tools_daily_brief_page') }}"><span class="nav-bullet"></span>오늘 위험 브리핑</a>
             <a class="nav-link {% if request.path == url_for('ai_tools_student_plan_page') %}active{% endif %}" href="{{ url_for('ai_tools_student_plan_page') }}"><span class="nav-bullet"></span>학생별 안전계획</a>
             <a class="nav-link {% if request.path == url_for('ai_tools_menu_review_page') %}active{% endif %}" href="{{ url_for('ai_tools_menu_review_page') }}"><span class="nav-bullet"></span>메뉴 코드 점검</a>
+            <a class="nav-link {% if active_tab == 'ai_history' %}active{% endif %}" href="{{ url_for('ai_job_history_page') }}"><span class="nav-bullet"></span>AI 작업 기록</a>
+            <a class="nav-link {% if active_tab == 'review_queue' %}active{% endif %}" href="{{ url_for('review_queue_page') }}"><span class="nav-bullet"></span>검토 대기함</a>
           </div>
         </section>
 
         <div class="nav-section">SYSTEM</div>
-        <section class="nav-group">
-          <button class="nav-parent" type="button" data-nav-toggle aria-expanded="false"><svg><use href="#i-terminal"></use></svg><span>Device</span><svg class="chevron"><use href="#i-chevron"></use></svg></button>
+        <section class="nav-group {% if active_tab in ['system_status', 'audit_log'] %}open{% endif %}">
+          <button class="nav-parent" type="button" data-nav-toggle aria-expanded="{% if active_tab in ['system_status', 'audit_log'] %}true{% else %}false{% endif %}"><svg><use href="#i-terminal"></use></svg><span>Device</span><svg class="chevron"><use href="#i-chevron"></use></svg></button>
           <div class="nav-children">
+            <a class="nav-link {% if active_tab == 'system_status' %}active{% endif %}" href="{{ url_for('system_status_page') }}"><span class="nav-bullet"></span>시스템 상태</a>
+            <a class="nav-link {% if active_tab == 'audit_log' %}active{% endif %}" href="{{ url_for('audit_log_page') }}"><span class="nav-bullet"></span>감사 로그</a>
             <a class="nav-link" href="{{ url_for('kiosk_page') }}" target="_blank"><span class="nav-bullet"></span>라즈베리파이 연결</a>
-            {% if rfid_dashboard_url %}<a class="nav-link" href="{{ rfid_dashboard_url }}" target="_blank"><span class="nav-bullet"></span>키오스크 열기</a>{% endif %}
+            {% if rfid_dashboard_url %}<a class="nav-link" href="{{ rfid_dashboard_url }}" target="_blank"><span class="nav-bullet"></span>RFID 모니터</a>{% endif %}
           </div>
         </section>
       </nav>
@@ -157,9 +161,13 @@
         <a class="collapsed-icon-link {% if request.path == url_for('ai_tools_daily_brief_page') %}active{% endif %}" href="{{ url_for('ai_tools_daily_brief_page') }}" title="오늘 위험 브리핑" aria-label="오늘 위험 브리핑"><svg><use href="#i-bell"></use></svg></a>
         <a class="collapsed-icon-link {% if request.path == url_for('ai_tools_student_plan_page') %}active{% endif %}" href="{{ url_for('ai_tools_student_plan_page') }}" title="학생별 안전계획" aria-label="학생별 안전계획"><svg><use href="#i-users"></use></svg></a>
         <a class="collapsed-icon-link {% if request.path == url_for('ai_tools_menu_review_page') %}active{% endif %}" href="{{ url_for('ai_tools_menu_review_page') }}" title="메뉴 코드 점검" aria-label="메뉴 코드 점검"><svg><use href="#i-search"></use></svg></a>
+        <a class="collapsed-icon-link {% if active_tab == 'ai_history' %}active{% endif %}" href="{{ url_for('ai_job_history_page') }}" title="AI 작업 기록" aria-label="AI 작업 기록"><svg><use href="#i-activity"></use></svg></a>
+        <a class="collapsed-icon-link {% if active_tab == 'review_queue' %}active{% endif %}" href="{{ url_for('review_queue_page') }}" title="검토 대기함" aria-label="검토 대기함"><svg><use href="#i-shield"></use></svg></a>
         <span class="collapsed-icon-divider" aria-hidden="true"></span>
+        <a class="collapsed-icon-link {% if active_tab == 'system_status' %}active{% endif %}" href="{{ url_for('system_status_page') }}" title="시스템 상태" aria-label="시스템 상태"><svg><use href="#i-terminal"></use></svg></a>
+        <a class="collapsed-icon-link {% if active_tab == 'audit_log' %}active{% endif %}" href="{{ url_for('audit_log_page') }}" title="감사 로그" aria-label="감사 로그"><svg><use href="#i-activity"></use></svg></a>
         <a class="collapsed-icon-link" href="{{ url_for('kiosk_page') }}" target="_blank" title="라즈베리파이 연결" aria-label="라즈베리파이 연결"><svg><use href="#i-terminal"></use></svg></a>
-        {% if rfid_dashboard_url %}<a class="collapsed-icon-link" href="{{ rfid_dashboard_url }}" target="_blank" title="키오스크 열기" aria-label="키오스크 열기"><svg><use href="#i-activity"></use></svg></a>{% endif %}
+        {% if rfid_dashboard_url %}<a class="collapsed-icon-link" href="{{ rfid_dashboard_url }}" target="_blank" title="RFID 모니터" aria-label="RFID 모니터"><svg><use href="#i-activity"></use></svg></a>{% endif %}
       </nav>
       <div class="sidebar-account">
         <button type="button" class="avatar-button" onclick="openMyAccountModal()" title="내 계정">{% if profile_picture %}<img class="avatar-img" src="{{ profile_picture }}" alt="프로필">{% else %}{{ (login_name or '관')[:1] }}{% endif %}</button>

@@ -6,3 +6,4 @@ from admin import v5_profile_patch  # noqa: F401 - registers profile image stora
 from admin import v5_enterprise_patch  # noqa: F401 - registers persistence and AI safety insights
 from admin import v5_enterprise_safety_patch  # noqa: F401 - keeps persistence failures non-fatal
 from admin import v5_background_jobs  # noqa: F401 - registers retryable background jobs and completion toasts
+from admin import v5_issue3_patch  # noqa: F401 - registers issue #3 fixes, AI history and review queue

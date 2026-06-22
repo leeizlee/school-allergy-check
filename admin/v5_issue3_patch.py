@@ -145,21 +145,29 @@ def _history_items(kind="", status=""):
 
 def _review_worksheet():
     sheet_id = os.getenv("REVIEW_QUEUE_SHEET_ID", "").strip()
-    if sheet_id:
-        base_ws = getattr(legacy, "menu_ws", None)
-        book = getattr(base_ws, "spreadsheet", None)
-        client = getattr(book, "client", None)
-        if not client:
-            raise RuntimeError("review_queue 문서에 연결할 Google Sheets 클라이언트를 찾지 못했어.")
-        target_book = client.open_by_key(sheet_id)
-        try:
-            ws = target_book.worksheet("review_queue")
-        except Exception:
-            ws = target_book.sheet1
-    else:
-        ws = enterprise._ensure_ops_sheet("review_queue", _REVIEW_HEADERS)
+    try:
+        if sheet_id:
+            base_ws = getattr(legacy, "menu_ws", None)
+            book = getattr(base_ws, "spreadsheet", None)
+            client = getattr(book, "client", None)
+            if not client:
+                raise RuntimeError("Google Sheets 클라이언트를 찾지 못했어.")
+            target_book = client.open_by_key(sheet_id)
+            try:
+                ws = target_book.worksheet("review_queue")
+            except Exception:
+                ws = target_book.add_worksheet("review_queue", 2000, len(_REVIEW_HEADERS))
+        else:
+            ws = enterprise._ensure_ops_sheet("review_queue", _REVIEW_HEADERS)
+    except Exception as exc:
+        raise RuntimeError(
+            "review_queue 탭이 없고 자동 생성에도 실패했어. "
+            "Google Sheets 편집 권한과 REVIEW_QUEUE_SHEET_ID 설정을 확인해줘."
+        ) from exc
     if not ws:
-        raise RuntimeError("review_queue 시트를 찾지 못했어.")
+        raise RuntimeError(
+            "review_queue 탭을 찾지 못했어. Google Sheets 연결 상태와 문서 권한을 확인해줘."
+        )
     headers = [_safe_text(value, 80) for value in ws.row_values(1)]
     for index, header in enumerate(_REVIEW_HEADERS, start=1):
         if len(headers) < index or headers[index - 1] != header:

@@ -4,6 +4,7 @@
   window.__adminV5ProfileUploadReady = true;
 
   var pendingPictureData = "";
+  var previousPictureUrl = "";
   var crop = {
     image: null,
     scale: 1,
@@ -69,6 +70,52 @@
     setAccountPreview(currentImage());
     var status = document.querySelector("#myAccountModal #profilePictureStatus");
     if (status) status.textContent = "PNG, JPG, WEBP, GIF 이미지를 사용할 수 있어.";
+  }
+
+  function readBlobAsDataUrl(blob) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result || "")); };
+      reader.onerror = function () { reject(new Error("이전 사진을 읽지 못했어.")); };
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function stagePreviousPicture() {
+    if (!previousPictureUrl) return;
+    var status = document.querySelector("#myAccountModal #profilePictureStatus");
+    try {
+      if (status) status.textContent = "이전 사진을 불러오는 중...";
+      var res = await fetch(previousPictureUrl, { cache: "no-store" });
+      if (!res.ok) throw new Error("이전 사진을 불러오지 못했어.");
+      pendingPictureData = await readBlobAsDataUrl(await res.blob());
+      setAccountPreview(pendingPictureData);
+      if (status) status.textContent = "이전 사진을 미리보기에 적용했어. 아래 저장을 눌러야 실제 반영돼.";
+    } catch (err) {
+      if (status) status.textContent = err.message || "이전 사진을 불러오지 못했어.";
+    }
+  }
+
+  async function loadPictureHistory() {
+    var previousItem = document.querySelector("#myAccountModal #profilePreviousPicture");
+    if (!previousItem) return;
+    try {
+      var res = await fetch("/api/my-account/picture/history", { headers: { "Accept": "application/json" } });
+      var contentType = res.headers.get("content-type") || "";
+      var data = contentType.indexOf("application/json") >= 0 ? await res.json() : { ok: false };
+      if (!res.ok || !data.ok) throw new Error(data.error || "사진 기록을 불러오지 못했어.");
+      previousPictureUrl = String(data.previous || "");
+      if (!previousPictureUrl) {
+        previousItem.hidden = true;
+        return;
+      }
+      previousItem.hidden = false;
+      var preview = previousItem.querySelector(".profile-preview");
+      if (preview) preview.innerHTML = avatar(previousPictureUrl);
+    } catch (err) {
+      previousPictureUrl = "";
+      previousItem.hidden = true;
+    }
   }
 
   function updateAllAvatars(src) {
@@ -271,7 +318,10 @@
     uploader.innerHTML = ""
       + '<div class="profile-upload-copy"><div class="profile-preview" id="profilePicturePreview">' + avatar(pendingPictureData || currentImage()) + '</div><div><strong>새 프로필 미리보기</strong><small>편집 완료 후에도 계정관리 저장 전까지는 실제 프로필이 바뀌지 않습니다.</small></div></div>'
       + '<div class="profile-upload-actions"><label class="profile-file-button">프로필사진 업로드<input id="profilePictureInput" type="file" accept="image/png,image/jpeg,image/jpg,image/jpe,image/webp,image/gif"></label><small class="profile-upload-status" id="profilePictureStatus">PNG, JPG, WEBP, GIF 이미지를 사용할 수 있어.</small></div>'
-      + '<div class="profile-existing-picture"><span>현재 프로필</span><div class="profile-preview profile-existing-preview">' + avatar(currentImage()) + '</div><small>계정관리에서 취소하면 이 사진이 그대로 유지됩니다.</small></div>';
+      + '<div class="profile-history-grid">'
+      + '<article class="profile-history-item"><div class="profile-preview profile-history-avatar">' + avatar(currentImage()) + '</div><div class="profile-history-copy"><strong>현재 프로필</strong><small>계정관리에서 취소하면 이 사진이 그대로 유지됩니다.</small></div></article>'
+      + '<article class="profile-history-item" id="profilePreviousPicture" hidden><div class="profile-preview profile-history-avatar"></div><div class="profile-history-copy"><strong>이전 프로필</strong><small>직전에 저장했던 사진을 다시 미리보기에 적용할 수 있습니다.</small></div><button class="btn btn-light profile-history-action" type="button" id="profilePreviousApplyBtn">이 사진 사용</button></article>'
+      + '</div>';
 
     var input = uploader.querySelector("#profilePictureInput");
     var status = uploader.querySelector("#profilePictureStatus");
@@ -287,6 +337,9 @@
       openCropModal(file);
       input.value = "";
     });
+    var previousButton = uploader.querySelector("#profilePreviousApplyBtn");
+    if (previousButton) previousButton.addEventListener("click", stagePreviousPicture);
+    loadPictureHistory();
   }
 
   async function uploadPendingPicture() {
@@ -306,8 +359,12 @@
     var previousOpen = window.openMyAccountModal;
     window.openMyAccountModal = function () {
       pendingPictureData = "";
+      previousPictureUrl = "";
       if (typeof previousOpen === "function") previousOpen.apply(this, arguments);
-      setTimeout(enhanceProfileUploadCard, 0);
+      setTimeout(function () {
+        enhanceProfileUploadCard();
+        loadPictureHistory();
+      }, 0);
     };
 
     var previousClose = window.closeMyAccountModal;

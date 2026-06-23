@@ -175,7 +175,7 @@
     <div class="student-card-list" role="list" aria-label="학생 목록">
       {% if student_rows %}
         {% for row in student_rows %}
-          <article class="student-card student-data-row" role="listitem" data-has-allergy="{% if row.allergy_names and row.allergy_names != '없음' %}1{% else %}0{% endif %}" data-has-rfid="{% if row.rfid_id %}1{% else %}0{% endif %}" data-search="{{ ((row.rfid_id or '') ~ ' ' ~ (row.name or '') ~ ' ' ~ (row.student_number or '') ~ ' ' ~ (row.allergy_names or '') ~ ' ' ~ (row.class_label or '') ~ ' ' ~ (row.student_label or ''))|lower }}">
+          <article class="student-card student-data-row" role="listitem" data-student-row="{{ row.row_index }}" data-has-allergy="{% if row.allergy_names and row.allergy_names != '없음' %}1{% else %}0{% endif %}" data-has-rfid="{% if row.rfid_id %}1{% else %}0{% endif %}" data-search="{{ ((row.rfid_id or '') ~ ' ' ~ (row.name or '') ~ ' ' ~ (row.student_number or '') ~ ' ' ~ (row.allergy_names or '') ~ ' ' ~ (row.class_label or '') ~ ' ' ~ (row.student_label or ''))|lower }}">
             <span class="checkbox-cell hidden student-checkbox-cell student-select-pill"><input type="checkbox" class="student-row-checkbox" value="{{ row.row_index }}"></span>
             <div class="student-card-avatar avatar-tone-{{ loop.index0 % 6 }}">
               {% if row.picture %}<img src="{{ row.picture }}" alt="{{ row.name or '학생' }} 프로필">{% else %}{{ (row.name or '?')[:1] }}{% endif %}
@@ -208,7 +208,7 @@
                 <span class="rfid-pill warn">미등록</span>
                 <small>카드 연결 필요</small>
               {% endif %}
-              <button class="btn btn-light row-action-button" type="button" onclick='openStudentEditModal({{ row.row_index }}, {{ row.rfid_id|tojson }}, {{ row.name|tojson }}, {{ row.student_number|tojson }}, {{ row.allergy_codes|tojson }})'>수정</button>
+              <button class="btn btn-light row-action-button" type="button" onclick='openStudentEditModal({{ row.row_index }}, {{ row.rfid_id|tojson }}, {{ row.name|tojson }}, {{ row.student_number|tojson }}, {{ row.allergy_codes|tojson }}, {{ (row.picture or '')|tojson }})'>수정</button>
             </div>
           </article>
         {% endfor %}

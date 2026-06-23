@@ -29,6 +29,9 @@ _REVIEW_HEADERS = [
     "created_by", "created_at", "reviewed_by", "reviewed_at", "etc",
 ]
 _REVIEW_LOCK = threading.RLock()
+_REVIEW_CACHE_TTL = max(5, min(int(os.getenv("REVIEW_QUEUE_CACHE_SECONDS", "30")), 120))
+_REVIEW_SHEET_CACHE = {"key": "", "ws": None, "headers": {}}
+_REVIEW_ITEMS_CACHE = {"ts": 0.0, "items": [], "warning": "", "loaded": False}
 _RUNTIME_HISTORY_IDS = {}
 _MENU_TARGET_CACHE = {"ts": 0.0, "items": {}}
 _MENU_TARGET_LOCK = threading.Lock()
@@ -143,8 +146,28 @@ def _history_items(kind="", status=""):
     return [dict(item) for item in items]
 
 
+def _review_error_message(exc):
+    text = _safe_text(exc, 500)
+    lowered = text.lower()
+    if "429" in lowered or "quota" in lowered or "read requests" in lowered:
+        return "Google Sheets 읽기 한도를 잠시 초과했어. 최근 저장된 검토 목록을 표시하고 잠시 후 다시 확인할게."
+    return "review_queue를 불러오지 못했어. Google Sheets 연결 상태와 편집 권한을 확인해줘."
+
+
+def _invalidate_review_items_cache():
+    _REVIEW_ITEMS_CACHE["ts"] = 0.0
+
+
+def _review_cache_warning():
+    return _safe_text(_REVIEW_ITEMS_CACHE.get("warning"), 300)
+
+
 def _review_worksheet():
     sheet_id = os.getenv("REVIEW_QUEUE_SHEET_ID", "").strip()
+    cache_key = sheet_id or "__default__"
+    with _REVIEW_LOCK:
+        if _REVIEW_SHEET_CACHE.get("key") == cache_key and _REVIEW_SHEET_CACHE.get("ws") is not None:
+            return _REVIEW_SHEET_CACHE["ws"]
     try:
         if sheet_id:
             base_ws = getattr(legacy, "menu_ws", None)
@@ -172,6 +195,11 @@ def _review_worksheet():
     for index, header in enumerate(_REVIEW_HEADERS, start=1):
         if len(headers) < index or headers[index - 1] != header:
             ws.update_cell(1, index, header)
+    _REVIEW_SHEET_CACHE.update({
+        "key": cache_key,
+        "ws": ws,
+        "headers": {header: index for index, header in enumerate(_REVIEW_HEADERS, start=1)},
+    })
     return ws
 
 
@@ -188,26 +216,46 @@ def _json_field(value):
 
 
 def _review_items(status="", kind=""):
+    now = time.monotonic()
     with _REVIEW_LOCK:
-        ws = _review_worksheet()
-        records = ws.get_all_records()
-    items = []
-    for row_index, raw in enumerate(records, start=2):
-        row = legacy.clean_record_keys(raw)
-        item = {header: _safe_text(row.get(header), 12000) for header in _REVIEW_HEADERS}
-        if not item["id"]:
-            continue
-        item["row_index"] = row_index
-        item["info_data"] = _json_field(item["info"])
-        item["result_data"] = _json_field(item["result"])
-        item["etc_data"] = _json_field(item["etc"])
+        cached_items = _REVIEW_ITEMS_CACHE.get("items") or []
+        cache_loaded = bool(_REVIEW_ITEMS_CACHE.get("loaded"))
+        cache_fresh = cache_loaded and now - float(_REVIEW_ITEMS_CACHE.get("ts") or 0) < _REVIEW_CACHE_TTL
+        if cache_fresh:
+            items = [dict(item) for item in cached_items]
+        else:
+            try:
+                records = _review_worksheet().get_all_records()
+                items = []
+                for row_index, raw in enumerate(records, start=2):
+                    row = legacy.clean_record_keys(raw)
+                    item = {header: _safe_text(row.get(header), 12000) for header in _REVIEW_HEADERS}
+                    if not item["id"]:
+                        continue
+                    item["row_index"] = row_index
+                    item["info_data"] = _json_field(item["info"])
+                    item["result_data"] = _json_field(item["result"])
+                    item["etc_data"] = _json_field(item["etc"])
+                    items.append(item)
+                items.sort(key=lambda item: (item.get("created_at", ""), item.get("id", "")), reverse=True)
+                _REVIEW_ITEMS_CACHE.update({"ts": now, "items": [dict(item) for item in items], "warning": "", "loaded": True})
+            except Exception as exc:
+                warning = _review_error_message(exc)
+                _REVIEW_ITEMS_CACHE["warning"] = warning
+                if cache_loaded:
+                    items = [dict(item) for item in cached_items]
+                    _REVIEW_ITEMS_CACHE["ts"] = now
+                else:
+                    raise RuntimeError(warning) from exc
+
+    filtered = []
+    for item in items:
         if status and item["status"] != status:
             continue
         if kind and item["kind"] != kind:
             continue
-        items.append(item)
-    items.sort(key=lambda item: (item.get("created_at", ""), item.get("id", "")), reverse=True)
-    return items
+        filtered.append(item)
+    return filtered
 
 
 def _review_item(item_id):
@@ -223,19 +271,23 @@ def _append_review(item):
         ws = _review_worksheet()
         ws.append_row([row.get(header, "") for header in _REVIEW_HEADERS], value_input_option="USER_ENTERED")
         _invalidate_sheet_cache(ws)
+        _invalidate_review_items_cache()
     return row
 
 
 def _update_review(item, **updates):
     with _REVIEW_LOCK:
         ws = _review_worksheet()
-        headers = [_safe_text(value, 80) for value in ws.row_values(1)]
-        header_map = {header: index for index, header in enumerate(headers, start=1)}
+        header_map = dict(_REVIEW_SHEET_CACHE.get("headers") or {})
+        if not header_map:
+            headers = [_safe_text(value, 80) for value in ws.row_values(1)]
+            header_map = {header: index for index, header in enumerate(headers, start=1)}
         for key, value in updates.items():
             if key not in header_map:
                 continue
             ws.update_cell(item["row_index"], header_map[key], _safe_text(value, 12000))
         _invalidate_sheet_cache(ws)
+        _invalidate_review_items_cache()
 
 
 def _normalize_date(value):
@@ -459,7 +511,14 @@ def review_queue_page():
         items = []
         error = _safe_text(exc, 300)
     context = v5_admin_renderer._build_context("검토 대기함", "AI 대체급식 추천을 승인, 수정 후 승인, 반려하는 작업 공간입니다.", "ai_tools")
-    context.update({"active_tab": "review_queue", "review_items": items, "review_status": status, "review_kind": kind, "review_error": error})
+    context.update({
+        "active_tab": "review_queue",
+        "review_items": items,
+        "review_status": status,
+        "review_kind": kind,
+        "review_error": error,
+        "review_warning": _review_cache_warning(),
+    })
     return render_template("admin/review_queue.html", **context)
 
 
@@ -469,7 +528,8 @@ def api_review_queue():
     if not ok:
         return response
     try:
-        return jsonify({"ok": True, "items": _review_items(_safe_text(request.args.get("status"), 40), _safe_text(request.args.get("kind"), 40))})
+        items = _review_items(_safe_text(request.args.get("status"), 40), _safe_text(request.args.get("kind"), 40))
+        return jsonify({"ok": True, "items": items, "warning": _review_cache_warning()})
     except Exception as exc:
         return jsonify({"ok": False, "error": _safe_text(exc, 300)}), 503
 

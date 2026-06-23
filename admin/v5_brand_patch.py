@@ -4,9 +4,9 @@ from admin.app_admin import app
 
 
 _FAVICON_LINKS = (
-    '<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">\n'
-    '  <link rel="shortcut icon" href="/favicon.ico" type="image/svg+xml">\n'
-    '  <link rel="apple-touch-icon" href="/static/favicon.svg">\n'
+    '<link rel="icon" href="/static/favicon.svg?v=20260624" type="image/svg+xml">\n'
+    '  <link rel="shortcut icon" href="/favicon.ico?v=20260624" type="image/svg+xml">\n'
+    '  <link rel="apple-touch-icon" href="/static/favicon.svg?v=20260624">\n'
     '  <meta name="theme-color" content="#101827">'
 )
 
@@ -38,3 +38,4 @@ def _inject_brand_icon_links(response):
     response.set_data(html)
     response.headers["Content-Length"] = str(len(response.get_data()))
     return response
+

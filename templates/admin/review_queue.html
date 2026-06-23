@@ -3,6 +3,7 @@
 {% block page_actions %}<a class="btn btn-outline" href="{{ url_for('ai_job_history_page') }}">AI 작업 기록</a><a class="btn btn-primary" href="{{ url_for('ai_tools_page') }}">대체급식 추천</a>{% endblock %}
 {% block content %}
 {% if review_error %}<div class="alert-panel danger"><span class="alert-icon">!</span><div><strong>review_queue 연결 오류</strong><p>{{ review_error }}</p></div></div>{% endif %}
+{% if review_warning %}<div class="alert-panel warn"><span class="alert-icon">!</span><div><strong>최근 검토 목록 표시 중</strong><p>{{ review_warning }}</p></div></div>{% endif %}
 <section class="panel">
   <div class="panel-title"><div><h2>대체급식 검토 대기함</h2><p>AI 추천은 승인되기 전까지 실제 food_menu에 반영되지 않습니다.</p></div><span class="badge warn">{{ review_items|length }}건</span></div>
   <div class="issue3-filter-bar">

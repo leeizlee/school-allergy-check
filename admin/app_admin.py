@@ -109,6 +109,7 @@ LAST_SCAN_STATE = {
     "student_allergy_names": [],
     "warning_names": [],
     "unsafe_menus": [],
+    "unsafe_menu_details": [],
     "matched_allergies": [],
     "risk_explanation": "",
     "alternative_recommendation": "",
@@ -132,6 +133,7 @@ def reset_last_scan_state():
         "student_allergy_names": [],
         "warning_names": [],
         "unsafe_menus": [],
+        "unsafe_menu_details": [],
         "matched_allergies": [],
         "risk_explanation": "",
         "alternative_recommendation": "",
@@ -154,6 +156,18 @@ def update_last_scan_state_from_result(result):
     warning_names = normalize_text_list(scan.get("hit_names"))
     student_allergy_names = normalize_text_list(scan.get("student_allergy_names"))
     unsafe_menus = normalize_text_list(scan.get("unsafe_menus"))
+    unsafe_menu_details = []
+    for item in scan.get("unsafe_menu_details") or []:
+        if not isinstance(item, dict):
+            continue
+        item_name = safe_str(item.get("menu_name")).strip()
+        if not item_name:
+            continue
+        unsafe_menu_details.append({
+            "menu_name": item_name,
+            "hit_names": normalize_text_list(item.get("hit_names")),
+            "hit_codes": sorted(parse_codes(item.get("hit_codes"))),
+        })
     matched_allergies = normalize_text_list(scan.get("matched_allergies"))
     risk_explanation = safe_str(scan.get("risk_explanation")).strip()
     alternative_recommendation = safe_str(scan.get("alternative_recommendation")).strip()
@@ -174,6 +188,7 @@ def update_last_scan_state_from_result(result):
             "student_allergy_names": [],
             "warning_names": [],
             "unsafe_menus": [],
+            "unsafe_menu_details": [],
             "matched_allergies": [],
             "risk_explanation": "",
             "alternative_recommendation": "",
@@ -197,6 +212,7 @@ def update_last_scan_state_from_result(result):
             "student_allergy_names": student_allergy_names,
             "warning_names": [],
             "unsafe_menus": [],
+            "unsafe_menu_details": [],
             "matched_allergies": [],
             "risk_explanation": "",
             "alternative_recommendation": "",
@@ -220,6 +236,7 @@ def update_last_scan_state_from_result(result):
             "student_allergy_names": student_allergy_names,
             "warning_names": warning_names if status == "경고" else [],
             "unsafe_menus": unsafe_menus if status == "경고" else [],
+            "unsafe_menu_details": unsafe_menu_details if status == "경고" else [],
             "matched_allergies": matched_allergies if status == "경고" else [],
             "risk_explanation": risk_explanation if status == "경고" else "",
             "alternative_recommendation": alternative_recommendation if status == "경고" else "",
@@ -1634,6 +1651,7 @@ def process_scan(uid):
                 "hit_codes": "",
                 "hit_names": "",
                 "unsafe_menus": [],
+                "unsafe_menu_details": [],
                 "matched_allergies": [],
                 "risk_explanation": "",
                 "alternative_recommendation": "",
@@ -1658,6 +1676,7 @@ def process_scan(uid):
                 "hit_codes": "",
                 "hit_names": "",
                 "unsafe_menus": [],
+                "unsafe_menu_details": [],
                 "matched_allergies": [],
                 "risk_explanation": "",
                 "alternative_recommendation": "",
@@ -1682,6 +1701,7 @@ def process_scan(uid):
                 "hit_codes": "",
                 "hit_names": "",
                 "unsafe_menus": [],
+                "unsafe_menu_details": [],
                 "matched_allergies": [],
                 "risk_explanation": "",
                 "alternative_recommendation": "",
@@ -1725,6 +1745,7 @@ def process_scan(uid):
                 "hit_codes": ",".join(str(x) for x in hit),
                 "hit_names": ", ".join(hit_names),
                 "unsafe_menus": unsafe_menus,
+                "unsafe_menu_details": menu_hit_details,
                 "matched_allergies": ai_assist.get("matched_allergies", hit_names),
                 "risk_explanation": ai_assist.get("risk_explanation", ""),
                 "alternative_recommendation": ai_assist.get("alternative_recommendation", ""),
@@ -1747,11 +1768,53 @@ def process_scan(uid):
             "hit_codes": "",
             "hit_names": "",
             "unsafe_menus": [],
+            "unsafe_menu_details": [],
             "matched_allergies": [],
             "risk_explanation": "",
             "alternative_recommendation": "",
             "needs_staff_review": False,
         },
+    }
+
+
+def build_kiosk_device_response(result):
+    """Return only the fields required by the Raspberry Pi indicators."""
+    result = result if isinstance(result, dict) else {}
+    scan = result.get("scan") if isinstance(result.get("scan"), dict) else {}
+    raw_status = safe_str(scan.get("status")).strip()
+
+    registered = False
+    status = "error"
+    allergy_codes = []
+    led = "red"
+    buzzer = True
+
+    if result.get("ok"):
+        if raw_status == "미등록":
+            registered = False
+            status = "unregistered"
+        elif raw_status == "경고":
+            registered = True
+            status = "danger"
+            allergy_codes = [str(code) for code in sorted(parse_codes(scan.get("hit_codes")))]
+            buzzer = False
+        elif raw_status == "OK":
+            registered = True
+            status = "safe"
+            led = "green"
+            buzzer = False
+        else:
+            registered = True
+            status = "unknown"
+
+    return {
+        "ok": bool(result.get("ok")),
+        "received": True,
+        "registered": registered,
+        "status": status,
+        "allergy_codes": allergy_codes,
+        "led": led,
+        "buzzer": buzzer,
     }
 
 def get_trash_rows():
@@ -6419,13 +6482,14 @@ KIOSK_DISPLAY_HTML = r"""
     }
     body {
       margin: 0;
-      min-height: 100vh;
+      height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
       transition: background .35s ease, color .35s ease;
       padding: 20px;
+      overflow: hidden;
     }
     body.waiting {
       background: linear-gradient(135deg, #eef2f7, #dfe7f1);
@@ -6444,7 +6508,7 @@ KIOSK_DISPLAY_HTML = r"""
       color: #881337;
     }
     .wrap {
-      width: min(94vw, 860px);
+      width: min(94vw, 900px);
       text-align: center;
       position: relative;
     }
@@ -6540,17 +6604,18 @@ KIOSK_DISPLAY_HTML = r"""
 
     .detected-card {
       border: 5px solid #f97316;
-      padding: 34px 30px;
+      padding: clamp(20px, 3.2vh, 32px) clamp(22px, 4vw, 36px);
       text-align: left;
       box-shadow: 0 24px 60px rgba(249,115,22,0.18);
+      transform-origin: center center;
     }
     .top {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
+      gap: 20px;
+      padding-bottom: clamp(12px, 2vh, 20px);
+      border-bottom: 1px solid #fed7aa;
     }
     .title {
       font-size: clamp(1.8rem, 4vw, 2.8rem);
@@ -6566,51 +6631,110 @@ KIOSK_DISPLAY_HTML = r"""
       font-size: 1rem;
     }
     .name {
-      font-size: clamp(2.1rem, 5vw, 3.6rem);
+      font-size: clamp(2.2rem, 5vw, 3.4rem);
       font-weight: 900;
-      margin: 8px 0 10px;
       color: #9a3412;
     }
-    .meta {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 14px;
-      margin: 24px 0;
+    .student-line {
+      display: flex;
+      align-items: baseline;
+      gap: 18px;
+      margin: clamp(14px, 2.3vh, 22px) 0 clamp(10px, 1.8vh, 16px);
     }
-    .box {
+    .student-number {
+      color: #c2410c;
+      font-size: clamp(1.4rem, 3vw, 1.9rem);
+      font-weight: 850;
+    }
+    .allergy-state {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: clamp(14px, 2.2vh, 22px);
+      padding: 12px 16px;
       background: #fff7ed;
-      border: 1px solid #fdba74;
-      border-radius: 18px;
-      padding: 16px 18px;
-    }
-    .label {
-      font-size: 0.95rem;
+      border-radius: 16px;
       color: #9a3412;
-      margin-bottom: 6px;
-      font-weight: 700;
-    }
-    .value {
-      font-size: 1.2rem;
+      font-size: 1.18rem;
       font-weight: 800;
-      color: #7c2d12;
+    }
+    .allergy-state strong {
+      color: #be123c;
+      font-size: 1.4rem;
+    }
+    .allergy-total {
+      margin-left: 7px;
+      color: #e11d48;
+      font-size: .86rem;
+      font-weight: 850;
+    }
+    .danger-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .danger-heading h2 {
+      margin: 0;
+      color: #9f1239;
+      font-size: 1.55rem;
+    }
+    .danger-count {
+      padding: 6px 11px;
+      border-radius: 999px;
+      background: #ffe4e6;
+      color: #be123c;
+      font-size: .88rem;
+      font-weight: 900;
+    }
+    .danger-menu-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: clamp(7px, 1.2vh, 11px);
+    }
+    .danger-menu-item {
+      min-height: 0;
+      background: #fff1f2;
+      border: 1px solid #fb7185;
+      border-left-width: 6px;
+      border-radius: 13px;
+      padding: clamp(9px, 1.4vh, 13px) 13px;
+    }
+    .danger-menu-item strong {
+      display: block;
+      color: #9f1239;
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      margin-bottom: 7px;
       word-break: keep-all;
     }
-    .warn {
-      margin-top: 10px;
-      background: #fff1f2;
-      border: 2px solid #fb7185;
+    .danger-allergy-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .danger-allergy-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #ffe4e6;
       color: #be123c;
-      border-radius: 18px;
-      padding: 18px 20px;
-      font-size: 1.1rem;
-      line-height: 1.7;
-      font-weight: 700;
+      font-size: .76rem;
+      font-weight: 800;
     }
-    .warn ul {
-      margin: 10px 0 0 20px;
-      padding: 0;
+    .danger-fallback {
+      margin: 0;
+      padding: 12px 16px;
+      list-style: none;
+      border: 1px solid #fb7185;
+      border-left: 6px solid #e11d48;
+      border-radius: 13px;
+      background: #fff1f2;
+      color: #be123c;
+      font-weight: 800;
     }
-    .warn li { margin: 6px 0; }
 
     body.ok .detected-card {
       border-color: #22c55e;
@@ -6623,21 +6747,38 @@ KIOSK_DISPLAY_HTML = r"""
     body.ok .name {
       color: #166534;
     }
-    body.ok .box {
+    body.ok .allergy-state {
       background: #f0fdf4;
-      border-color: #86efac;
-    }
-    body.ok .label {
       color: #166534;
     }
-    body.ok .value {
-      color: #14532d;
+    body.ok .allergy-state strong,
+    body.ok .allergy-total,
+    body.ok .danger-heading h2,
+    body.ok .danger-count {
+      color: #047857;
     }
-    body.ok .warn {
+    body.ok .danger-count { background: #d1fae5; }
+    body.ok .danger-fallback {
       background: #ecfdf5;
       border-color: #6ee7b7;
       color: #047857;
     }
+
+    .detected-card.compact .danger-menu-list {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 7px;
+    }
+    .detected-card.compact .danger-menu-item { padding: 8px 10px; }
+    .detected-card.compact .danger-menu-item strong { font-size: 1rem; margin-bottom: 5px; }
+    .detected-card.compact .danger-allergy-tag { padding: 3px 6px; font-size: .7rem; }
+    .detected-card.dense .danger-menu-list {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 5px;
+    }
+    .detected-card.dense .danger-menu-item { padding: 6px 8px; border-left-width: 4px; }
+    .detected-card.dense .danger-menu-item strong { font-size: .88rem; margin-bottom: 4px; }
+    .detected-card.dense .danger-allergy-tags { gap: 3px; }
+    .detected-card.dense .danger-allergy-tag { padding: 2px 5px; font-size: .64rem; }
 
     .notfound-card {
       border: 5px solid #e11d48;
@@ -6705,38 +6846,26 @@ KIOSK_DISPLAY_HTML = r"""
         <div class="status" id="detectedStatus">주의</div>
       </div>
 
-      <div class="name" id="detectedName">카리나</div>
-
-      <div class="meta">
-        <div class="box">
-          <div class="label">학번</div>
-          <div class="value" id="detectedStudentNo">20315</div>
-        </div>
-        <div class="box">
-          <div class="label">오늘 메뉴</div>
-          <div class="value" id="detectedMenu">카레라이스 / 계란국 / 새우튀김</div>
-        </div>
-        <div class="box">
-          <div class="label">학생 알러지</div>
-          <div class="value" id="detectedAllergyState">있음</div>
-        </div>
-        <div class="box">
-          <div class="label">위험 메뉴</div>
-          <div class="value" id="detectedUnsafeMenus">돈까스</div>
-        </div>
-        <div class="box" id="detectedRiskBox">
-          <div class="label">알러지 위험도</div>
-          <div class="value" id="detectedRisk">주의</div>
-        </div>
+      <div class="student-line" aria-label="학생 정보">
+        <span class="student-number" id="detectedStudentNo">20315</span>
+        <strong class="name" id="detectedName">카리나</strong>
       </div>
 
-      <div class="warn" id="detectedWarnBox">
-        <span id="detectedWarnIntro">감지된 알러지 유발 성분이 있어요.</span>
-        <ul id="detectedWarnList">
-          <li>난류(계란)</li>
-          <li>갑각류(새우)</li>
+      <div class="allergy-state">
+        <span>학생 알러지</span>
+        <strong><span id="detectedAllergyState">있음</span><span class="allergy-total" id="detectedAllergyTotal">2종</span></strong>
+      </div>
+
+      <section aria-labelledby="dangerMenuTitle">
+        <div class="danger-heading">
+          <h2 id="dangerMenuTitle">위험 메뉴</h2>
+          <span class="danger-count" id="detectedDangerCount">1개</span>
+        </div>
+        <div class="danger-menu-list" id="detectedDangerMenus"></div>
+        <ul class="danger-fallback" id="detectedWarnList">
+          <li>메뉴를 확인해 주세요.</li>
         </ul>
-      </div>
+      </section>
     </section>
 
     <section id="notfound" class="card notfound-card">
@@ -6782,53 +6911,92 @@ KIOSK_DISPLAY_HTML = r"""
       const studentAllergyNames = Array.isArray(data.student_allergy_names) ? data.student_allergy_names : [];
       const studentAllergyState = data.student_allergy_state || (studentAllergyNames.length ? '있음' : '없음');
       const unsafeMenus = Array.isArray(data.unsafe_menus) ? data.unsafe_menus : [];
+      const unsafeMenuDetails = Array.isArray(data.unsafe_menu_details) ? data.unsafe_menu_details : [];
       const matchedAllergies = Array.isArray(data.matched_allergies) ? data.matched_allergies : [];
       setText('detectedStatus', statusText, isSafe ? '안전' : '주의');
       setText('detectedName', data.name, '-');
       setText('detectedStudentNo', data.student_number, '-');
-      setText('detectedMenu', data.menu_name, '-');
       setText('detectedAllergyState', studentAllergyState, studentAllergyNames.length ? '있음' : '없음');
-      setText('detectedUnsafeMenus', unsafeMenus.length ? unsafeMenus.join(', ') : '해당 없음', '해당 없음');
-      setText('detectedRisk', statusText, isSafe ? '안전' : '주의');
+      setText('detectedAllergyTotal', studentAllergyNames.length ? `${studentAllergyNames.length}종` : '0종');
+      setText('detectedDangerCount', `${unsafeMenuDetails.length || unsafeMenus.length}개`);
 
-      const warnBox = document.getElementById('detectedWarnBox');
-      const intro = document.getElementById('detectedWarnIntro');
       const list = document.getElementById('detectedWarnList');
-      const riskBox = document.getElementById('detectedRiskBox');
+      const dangerMenus = document.getElementById('detectedDangerMenus');
+      const detectedCard = document.getElementById('detected');
       list.innerHTML = '';
+      if (dangerMenus) dangerMenus.innerHTML = '';
+      detectedCard.classList.remove('compact', 'dense');
 
       if (isSafe) {
-        if (riskBox) riskBox.style.display = '';
-        intro.textContent = studentAllergyNames.length
-          ? `학생 알러지 있음: ${studentAllergyNames.join(', ')}. 오늘 메뉴와는 겹치지 않아요.`
-          : '학생 알러지 없음. 안심하고 급식을 확인해도 돼요.';
-        if (warnBox) {
-          warnBox.style.background = '#ecfdf5';
-          warnBox.style.borderColor = '#6ee7b7';
-          warnBox.style.color = '#047857';
-        }
+        if (dangerMenus) dangerMenus.style.display = 'none';
+        list.style.display = '';
+        const li = document.createElement('li');
+        li.textContent = '해당 없음';
+        list.appendChild(li);
       } else {
-        if (riskBox) riskBox.style.display = 'none';
-        intro.textContent = `위험 메뉴: ${unsafeMenus.join(', ') || '확인 필요'}`;
-        if (warnBox) {
-          warnBox.style.background = '#fff1f2';
-          warnBox.style.borderColor = '#fb7185';
-          warnBox.style.color = '#be123c';
-        }
-        const listSource = warningNames.length ? warningNames : matchedAllergies;
-        if (listSource.length) {
-          listSource.forEach(item => {
-            const li = document.createElement('li');
-            li.textContent = item;
-            list.appendChild(li);
+        if (unsafeMenuDetails.length && dangerMenus) {
+          dangerMenus.style.display = 'grid';
+          list.style.display = 'none';
+          const totalTags = unsafeMenuDetails.reduce((total, item) => {
+            const names = Array.isArray(item.hit_names) ? item.hit_names.length : 0;
+            const codes = Array.isArray(item.hit_codes) ? item.hit_codes.length : 0;
+            return total + Math.max(names, codes, 1);
+          }, 0);
+          if (unsafeMenuDetails.length > 10 || totalTags > 35) detectedCard.classList.add('dense');
+          else if (unsafeMenuDetails.length > 6 || totalTags > 20) detectedCard.classList.add('compact');
+          unsafeMenuDetails.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'danger-menu-item';
+            const menuTitle = document.createElement('strong');
+            menuTitle.textContent = item.menu_name || '메뉴 확인 필요';
+            card.appendChild(menuTitle);
+
+            const tags = document.createElement('div');
+            tags.className = 'danger-allergy-tags';
+            const names = Array.isArray(item.hit_names) ? item.hit_names : [];
+            const codes = Array.isArray(item.hit_codes) ? item.hit_codes : [];
+            const count = Math.max(names.length, codes.length, 1);
+            for (let index = 0; index < count; index += 1) {
+              const tag = document.createElement('span');
+              tag.className = 'danger-allergy-tag';
+              const name = names[index] || '알러지';
+              const code = codes[index];
+              tag.textContent = code === undefined ? name : `${name} (${code})`;
+              tags.appendChild(tag);
+            }
+            card.appendChild(tags);
+            dangerMenus.appendChild(card);
           });
-        } else if (data.reason) {
-          const li = document.createElement('li');
-          li.textContent = data.reason;
-          list.appendChild(li);
+        } else {
+          if (dangerMenus) dangerMenus.style.display = 'none';
+          list.style.display = '';
+          const listSource = warningNames.length ? warningNames : matchedAllergies;
+          if (listSource.length) {
+            const li = document.createElement('li');
+            li.textContent = unsafeMenus.length
+              ? unsafeMenus.join(' · ')
+              : listSource.join(' · ');
+            list.appendChild(li);
+          } else if (data.reason) {
+            const li = document.createElement('li');
+            li.textContent = data.reason;
+            list.appendChild(li);
+          }
         }
       }
+      requestAnimationFrame(fitDetectedCard);
     }
+
+    function fitDetectedCard() {
+      const card = document.getElementById('detected');
+      if (!card || !card.classList.contains('active')) return;
+      card.style.zoom = '1';
+      const availableHeight = Math.max(200, window.innerHeight - 40);
+      const scale = Math.min(1, availableHeight / card.scrollHeight);
+      card.style.zoom = String(scale);
+    }
+
+    window.addEventListener('resize', fitDetectedCard);
 
     function renderNotFound(data) {
       setView('notfound');
@@ -8056,9 +8224,9 @@ def api_kiosk_scan():
 
     logger.info(f"[KIOSK_SCAN] 요청 수신 uid={uid or '-'} token_present={'yes' if token else 'no'} from={request.remote_addr}")
 
-    if KIOSK_SCAN_API_TOKEN and token != KIOSK_SCAN_API_TOKEN:
+    if KIOSK_SCAN_API_TOKEN and not hmac.compare_digest(token, KIOSK_SCAN_API_TOKEN):
         logger.warning(f"[KIOSK_SCAN] 토큰 불일치 from={request.remote_addr}")
-        return jsonify({"ok": False, "error": "인증 토큰이 올바르지 않아"}), 403
+        return jsonify({"ok": False, "received": False, "error": "unauthorized"}), 403
 
     if uid:
         LATEST_SCANNED_RFID_UID = uid
@@ -8080,7 +8248,7 @@ def api_kiosk_scan():
     )
 
     status_code = 200 if result.get("ok", False) else 400
-    return jsonify(result), status_code
+    return jsonify(build_kiosk_device_response(result)), status_code
 
 @app.get("/api/latest-rfid")
 def api_latest_rfid():

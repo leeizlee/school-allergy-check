@@ -234,7 +234,7 @@ def _security_preflight():
         token = str(data.get("token") or "").strip()
         expected = str(admin_app_module.KIOSK_SCAN_API_TOKEN).strip()
         if not hmac.compare_digest(token, expected):
-            return jsonify({"ok": False, "error": "인증 토큰이 올바르지 않아"}), 403
+            return jsonify({"ok": False, "received": False, "error": "unauthorized"}), 403
     return None
 
 

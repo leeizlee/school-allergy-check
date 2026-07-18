@@ -1,0 +1,249 @@
+/* Final dark-mode safety overrides for admin pages */
+.admin-v5{
+  --fix-bg:#f3f6fa;
+  --fix-card:#ffffff;
+  --fix-card-soft:#f8fafc;
+  --fix-text:#101828;
+  --fix-muted:#667085;
+  --fix-line:#dde4ee;
+  --fix-line-soft:#edf1f6;
+  --fix-primary:#47b89d;
+  --fix-danger:#d96366;
+  --fix-warn:#dba24b;
+  --fix-blue:#4f8edc;
+}
+body:not(.light-mode).admin-v5{
+  --fix-bg:#101724;
+  --fix-card:#172233;
+  --fix-card-soft:#111827;
+  --fix-text:#eef4ff;
+  --fix-muted:#a8b3c5;
+  --fix-line:#334155;
+  --fix-line-soft:#263448;
+}
+
+/* Stop light cards from leaking into dark mode */
+body:not(.light-mode).admin-v5 .page,
+body:not(.light-mode).admin-v5 .admin-main{background:var(--fix-bg)!important;color:var(--fix-text)!important}
+body:not(.light-mode).admin-v5 .panel,
+body:not(.light-mode).admin-v5 .stat-card,
+body:not(.light-mode).admin-v5 .mini-metric,
+body:not(.light-mode).admin-v5 .list-row,
+body:not(.light-mode).admin-v5 .timeline-row,
+body:not(.light-mode).admin-v5 .activity-row,
+body:not(.light-mode).admin-v5 .empty-state,
+body:not(.light-mode).admin-v5 .data-table,
+body:not(.light-mode).admin-v5 .menu-day-block,
+body:not(.light-mode).admin-v5 .result-panel,
+body:not(.light-mode).admin-v5 .workflow-list>a,
+body:not(.light-mode).admin-v5 .workflow-list div{
+  background:var(--fix-card)!important;
+  border-color:var(--fix-line)!important;
+  color:var(--fix-text)!important;
+}
+body:not(.light-mode).admin-v5 .panel-title,
+body:not(.light-mode).admin-v5 .toolbar,
+body:not(.light-mode).admin-v5 .form-strip{
+  border-color:var(--fix-line-soft)!important;
+}
+body:not(.light-mode).admin-v5 .data-table th,
+body:not(.light-mode).admin-v5 table th,
+body:not(.light-mode).admin-v5 .group-row td{
+  background:var(--fix-card-soft)!important;
+  color:var(--fix-muted)!important;
+  border-color:var(--fix-line)!important;
+}
+body:not(.light-mode).admin-v5 .data-table td,
+body:not(.light-mode).admin-v5 table td{border-color:var(--fix-line-soft)!important;color:var(--fix-text)!important}
+body:not(.light-mode).admin-v5 .data-table tr:hover{background:rgba(79,142,220,.08)!important}
+body:not(.light-mode).admin-v5 .data-table tr.row-danger,
+body:not(.light-mode).admin-v5 .menu-item-row.row-danger{background:rgba(217,99,102,.08)!important}
+
+/* Alert panels: fix the pale/white unreadable strip */
+body:not(.light-mode).admin-v5 .alert-panel,
+body:not(.light-mode).admin-v5 .alert-panel.safe,
+body:not(.light-mode).admin-v5 .alert-panel.warn,
+body:not(.light-mode).admin-v5 .alert-panel.danger{
+  background:var(--fix-card)!important;
+  color:var(--fix-text)!important;
+  border-color:var(--fix-line)!important;
+}
+body:not(.light-mode).admin-v5 .alert-panel.safe{background:rgba(71,184,157,.10)!important;border-color:rgba(71,184,157,.26)!important}
+body:not(.light-mode).admin-v5 .alert-panel.warn{background:rgba(219,162,75,.12)!important;border-color:rgba(219,162,75,.30)!important}
+body:not(.light-mode).admin-v5 .alert-panel.danger{background:rgba(217,99,102,.12)!important;border-color:rgba(217,99,102,.30)!important}
+body:not(.light-mode).admin-v5 .alert-panel strong{color:var(--fix-text)!important}
+body:not(.light-mode).admin-v5 .alert-panel p{color:var(--fix-muted)!important}
+
+/* Buttons and chips */
+body:not(.light-mode).admin-v5 .btn-light,
+body:not(.light-mode).admin-v5 .btn-outline,
+body:not(.light-mode).admin-v5 .secondary-btn,
+body:not(.light-mode).admin-v5 .chip,
+body:not(.light-mode).admin-v5 .soft-button{
+  background:var(--fix-card-soft)!important;
+  border-color:var(--fix-line)!important;
+  color:var(--fix-text)!important;
+}
+body:not(.light-mode).admin-v5 .btn-light:hover,
+body:not(.light-mode).admin-v5 .btn-outline:hover,
+body:not(.light-mode).admin-v5 .chip:hover{background:#1b293d!important;color:#fff!important}
+body:not(.light-mode).admin-v5 .chip.active{background:rgba(71,184,157,.18)!important;border-color:rgba(71,184,157,.42)!important;color:#8ae6d3!important}
+body:not(.light-mode).admin-v5 .btn-ghost{background:transparent!important;border-color:var(--fix-line)!important;color:var(--fix-muted)!important}
+body:not(.light-mode).admin-v5 .btn-primary{background:var(--fix-primary)!important;border-color:var(--fix-primary)!important;color:#fff!important}
+
+/* Inputs */
+body:not(.light-mode).admin-v5 input,
+body:not(.light-mode).admin-v5 select,
+body:not(.light-mode).admin-v5 textarea,
+body:not(.light-mode).admin-v5 .date-input,
+body:not(.light-mode).admin-v5 .search-input{
+  background:var(--fix-card-soft)!important;
+  border-color:var(--fix-line)!important;
+  color:var(--fix-text)!important;
+}
+body:not(.light-mode).admin-v5 input::placeholder,
+body:not(.light-mode).admin-v5 textarea::placeholder{color:#79879a!important}
+
+/* Notification dropdown + notification center */
+.admin-v5 .notification-page-list{display:grid;gap:10px;padding:16px}
+.admin-v5 .notification-page-list .notification-item,
+.admin-v5 .notification-panel .notification-item{
+  text-decoration:none;
+  color:var(--fix-text);
+}
+.admin-v5 .notification-page-list .notification-item{
+  display:grid;
+  grid-template-columns:40px minmax(0,1fr);
+  gap:12px;
+  align-items:start;
+  min-height:68px;
+  padding:13px 14px;
+  border:1px solid var(--fix-line-soft);
+  border-radius:8px;
+  background:var(--fix-card);
+}
+.admin-v5 .notification-page-list .notification-item:hover{background:var(--fix-card-soft);border-color:var(--fix-line)}
+.admin-v5 .notification-page-list .notification-item strong,
+.admin-v5 .notification-panel .notification-item strong{color:var(--fix-text)!important}
+.admin-v5 .notification-page-list .notification-item p,
+.admin-v5 .notification-panel .notification-item p,
+.admin-v5 .notification-page-list .notification-item time,
+.admin-v5 .notification-panel .notification-item time{color:var(--fix-muted)!important}
+body:not(.light-mode).admin-v5 .notification-panel,
+body:not(.light-mode).admin-v5 .notification-head,
+body:not(.light-mode).admin-v5 .notification-list,
+body:not(.light-mode).admin-v5 .notification-page-list .notification-item{
+  background:var(--fix-card)!important;
+  border-color:var(--fix-line)!important;
+  color:var(--fix-text)!important;
+}
+body:not(.light-mode).admin-v5 .notification-panel .notification-item{border-color:var(--fix-line-soft)!important}
+body:not(.light-mode).admin-v5 .notification-page-list .notification-item:hover,
+body:not(.light-mode).admin-v5 .notification-panel .notification-item:hover{background:#1b293d!important}
+body:not(.light-mode).admin-v5 .notification-head{border-bottom:1px solid var(--fix-line-soft)!important}
+
+/* Keep bug report semantic color fixed */
+.admin-v5 .docs-button,
+body:not(.light-mode).admin-v5 .docs-button{
+  background:rgba(71,184,157,.10)!important;
+  border:1px solid rgba(71,184,157,.35)!important;
+  color:#2f9e86!important;
+}
+body:not(.light-mode).admin-v5 .docs-button{color:#8ae6d3!important;background:rgba(71,184,157,.14)!important}
+
+/* Modal readability */
+body:not(.light-mode).admin-v5 .modal,
+body:not(.light-mode).admin-v5 .modal-card,
+body:not(.light-mode).admin-v5 .meal-analysis-dialog{
+  background:var(--fix-card)!important;
+  color:var(--fix-text)!important;
+  border-color:var(--fix-line)!important;
+}
+body:not(.light-mode).admin-v5 .modal-backdrop{background:rgba(5,10,18,.72)!important;backdrop-filter:blur(4px)}
+
+/* Account modal: make the form area readable and visually separated */
+.admin-v5 #myAccountModal .modal-card,
+.admin-v5 #myAccountModal .modal,
+.admin-v5 #myAccountModal [role="dialog"]{
+  width:min(940px,calc(100vw - 48px))!important;
+  max-height:86vh!important;
+  overflow:auto!important;
+  padding:22px!important;
+  border-radius:12px!important;
+  background:var(--fix-card)!important;
+  color:var(--fix-text)!important;
+  border:1px solid var(--fix-line)!important;
+  box-shadow:0 26px 90px rgba(15,23,42,.32)!important;
+}
+.admin-v5 #myAccountModal .profile-uploader{
+  display:grid!important;
+  grid-template-columns:auto minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:16px!important;
+  margin:0 0 18px!important;
+  padding:16px!important;
+  border:1px solid var(--fix-line)!important;
+  border-radius:12px!important;
+  background:linear-gradient(135deg,rgba(71,184,157,.16),rgba(79,142,220,.08))!important;
+  color:var(--fix-text)!important;
+}
+.admin-v5 #myAccountModal .profile-uploader>div:nth-child(2){min-width:0!important;display:grid!important;gap:7px!important}
+.admin-v5 #myAccountModal .profile-uploader strong{color:var(--fix-text)!important;font-size:15px!important;font-weight:900!important}
+.admin-v5 #myAccountModal .profile-uploader small{color:var(--fix-muted)!important;line-height:1.45!important}
+.admin-v5 #myAccountModal .profile-uploader input[type="file"]{
+  justify-self:end!important;
+  max-width:260px!important;
+  padding:9px!important;
+  background:var(--fix-card)!important;
+  border:1px solid var(--fix-line)!important;
+  border-radius:8px!important;
+}
+.admin-v5 #myAccountModal .profile-preview,
+.admin-v5 #profilePicturePreview{
+  width:76px!important;
+  height:76px!important;
+  border-radius:999px!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+  background:#66c5ad!important;
+  color:#fff!important;
+  font-size:24px!important;
+  font-weight:900!important;
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.34)!important;
+}
+.admin-v5 #myAccountModal .profile-preview img,
+.admin-v5 #profilePicturePreview img{
+  width:100%!important;
+  height:100%!important;
+  display:block!important;
+  object-fit:cover!important;
+  border-radius:inherit!important;
+}
+.admin-v5 #myAccountModal input:not([type="file"]),
+.admin-v5 #myAccountModal select,
+.admin-v5 #myAccountModal textarea{
+  width:100%!important;
+  min-height:44px!important;
+  margin:6px 0 12px!important;
+  background:var(--fix-card-soft)!important;
+  color:var(--fix-text)!important;
+  border:1px solid var(--fix-line)!important;
+  border-radius:8px!important;
+}
+.admin-v5 #myAccountModal .button-row,
+.admin-v5 #myAccountModal .modal-footer{
+  margin-top:12px!important;
+  display:flex!important;
+  justify-content:flex-end!important;
+  gap:10px!important;
+}
+
+@media(max-width:1180px){
+  .admin-v5 .dashboard-grid,
+  .admin-v5 .dashboard-grid.equal{grid-template-columns:1fr!important}
+}
+@media(max-width:760px){
+  .admin-v5 #myAccountModal .profile-uploader{grid-template-columns:1fr!important;justify-items:start!important}
+  .admin-v5 #myAccountModal .profile-uploader input[type="file"]{justify-self:stretch!important;max-width:100%!important}
+}

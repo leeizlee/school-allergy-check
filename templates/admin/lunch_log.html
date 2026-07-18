@@ -1,0 +1,158 @@
+{% extends "base_admin.html" %}
+{% block eyebrow %}LUNCH ROSTER{% endblock %}
+{% block page_actions %}
+  <a class="btn btn-outline" href="{{ url_for('notifications_page') }}">알림 보기</a>
+  <a class="btn btn-primary" href="{{ url_for('kiosk_page') }}" target="_blank">RFID 모니터</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin/admin_ui_polish.css') }}">
+{% set lunch_insights = lunch_insights|default({}) %}
+{% set today_stats = today_stats|default({}) %}
+{% set attendance_summary = attendance_summary|default({}) %}
+{% set lunch_log_rows = lunch_log_rows|default([]) %}
+{% set available_classes = available_classes|default([]) %}
+{% set selected_class = selected_class|default('all') %}
+{% set selected_date_input = selected_date_input|default('') %}
+{% set active_lunch_date = active_lunch_date|default(today_label|default('')) %}
+{% if lunch_insights.danger_count %}
+<div class="alert-panel danger">
+  <span class="alert-icon">!</span>
+  <div><strong>오늘 위험 감지 {{ lunch_insights.danger_count }}건</strong><p>아래 위험 체크 명단에서 학생과 알레르기 항목을 먼저 확인해 주세요.</p></div>
+</div>
+{% else %}
+<div class="alert-panel safe">
+  <span class="alert-icon">OK</span>
+  <div><strong>오늘 급식 체크 상태 안정</strong><p>현재 표시된 급식명단 기준 위험 판정은 없습니다.</p></div>
+</div>
+{% endif %}
+
+<section class="stat-grid">
+  <article class="stat-card with-icon"><span class="stat-icon">SC</span><span>오늘 스캔</span><strong>{{ today_stats.scan_count }}</strong><small>{{ today_label }}</small><div class="mini-bars blue"></div></article>
+  <article class="stat-card safe with-icon"><span class="stat-icon">OK</span><span>안전 판정</span><strong>{{ today_stats.ok_count }}</strong><small>통과 기록</small><div class="mini-bars mint"></div></article>
+  <article class="stat-card danger with-icon"><span class="stat-icon">!</span><span>위험 감지</span><strong>{{ today_stats.warning_count }}</strong><small>즉시 확인</small><div class="mini-bars red"></div></article>
+  <article class="stat-card warn with-icon"><span class="stat-icon">RF</span><span>미등록 RFID</span><strong>{{ lunch_insights.unknown_count }}</strong><small>카드 등록 필요</small><div class="mini-bars amber"></div></article>
+</section>
+
+<section class="dashboard-grid lunch-roster-grid">
+  <article class="panel panel-wide">
+    <div class="panel-title">
+      <div><h2>급식 체크 명단</h2><p>{{ active_lunch_date[:4] }}-{{ active_lunch_date[4:6] }}-{{ active_lunch_date[6:8] }} 기준 식사 확인 현황</p></div>
+      <span class="badge info">{{ attendance_summary.eaten_count }} / {{ attendance_summary.total_students }}명 확인</span>
+    </div>
+    <div class="toolbar lunch-toolbar">
+      <form class="inline-form" method="get" action="{{ url_for('lunch_log_page') }}">
+        <input class="date-input" type="date" name="date" value="{{ selected_date_input }}">
+        <input type="hidden" name="class_key" value="{{ selected_class }}">
+        <button class="btn btn-light" type="submit">날짜 보기</button>
+        <a class="btn btn-ghost" href="{{ url_for('lunch_log_page', class_key=selected_class) }}">오늘</a>
+      </form>
+      <div class="chip-row">
+        {% for class_item in available_classes %}
+        <a class="chip {% if selected_class == class_item.key %}active{% endif %}" href="{{ url_for('lunch_log_page', class_key=class_item.key, date=selected_date_input) }}">{{ class_item.label }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="dashboard-grid equal lunch-summary-metrics">
+      <div class="mini-metric"><strong>{{ attendance_summary.eaten_count }}</strong><span>식사 확인</span></div>
+      <div class="mini-metric"><strong>{{ attendance_summary.not_eaten_count }}</strong><span>미확인</span></div>
+      <div class="mini-metric"><strong>{{ today_stats.warning_count }}</strong><span>위험</span></div>
+      <div class="mini-metric"><strong>{{ lunch_insights.recent_scan_time }}</strong><span>최근 스캔</span></div>
+    </div>
+  </article>
+  <article class="panel">
+    <div class="panel-title"><div><h2>미확인 학생</h2><p>아직 RFID 인식 기록이 없는 학생</p></div><span class="badge warn">{{ attendance_summary.not_eaten_count }}명</span></div>
+    <div class="people-card-list short">
+      {% if attendance_summary.not_eaten_rows %}
+        {% for row in attendance_summary.not_eaten_rows[:8] %}
+        <div class="person-list-card compact">
+          <span class="person-avatar avatar-tone-{{ loop.index0 % 6 }}">{{ (row.name or '?')[:1] }}</span>
+          <div class="person-main">
+            <div class="person-title"><strong>{{ row.name or '-' }}</strong><span class="student-number">{{ row.student_number or '-' }}</span></div>
+            <div class="person-sub">{{ row.grade or '-' }}학년 {{ row.class_no or '-' }}반 {{ row.number or '-' }}번 · {{ row.allergy_names or '알레르기 없음' }}</div>
+          </div>
+          <div class="person-side"><span class="rfid-pill muted">{{ row.student_number or '-' }}</span></div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">전원이 식사 확인되었습니다.</div>
+      {% endif %}
+    </div>
+  </article>
+</section>
+
+<section class="dashboard-grid equal">
+  <article class="panel">
+    <div class="panel-title"><div><h2>최근 RFID 체크</h2><p>가장 최근 인식된 급식 로그</p></div></div>
+    <div class="people-card-list">
+      {% if lunch_log_rows %}
+        {% for row in lunch_log_rows[:8] %}
+        <div class="person-list-card {% if row.result == '경고' %}danger{% elif row.result == '미등록' %}warn{% endif %}">
+          <span class="person-avatar avatar-tone-{{ loop.index0 % 6 }} {% if row.result == '경고' %}danger{% elif row.result == 'OK' %}safe{% else %}warn{% endif %}">{{ (row.name or row.rfid_id or 'RF')[:2] }}</span>
+          <div class="person-main">
+            <div class="person-title"><strong>{{ row.name or row.rfid_id or '-' }}</strong><span class="person-time">{{ row.scanned_at or '-' }}</span></div>
+            <div class="person-sub">{{ row.grade or '-' }}학년 {{ row.class_no or '-' }}반 · {{ row.hit_names or '위험 없음' }}</div>
+          </div>
+          <div class="person-side">
+            {% if row.result == '경고' %}<span class="rfid-pill danger">위험</span>{% elif row.result == 'OK' %}<span class="rfid-pill safe">안전</span>{% elif row.result == '미등록' %}<span class="rfid-pill warn">미등록</span>{% else %}<span class="rfid-pill muted">{{ row.result or '-' }}</span>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state"><strong>아직 표시할 로그가 없습니다.</strong><p>키오스크에서 RFID를 인식하면 여기에 표시됩니다.</p></div>
+      {% endif %}
+    </div>
+  </article>
+  <article class="panel">
+    <div class="panel-title"><div><h2>위험/미등록 확인</h2><p>급식실에서 바로 확인할 항목</p></div></div>
+    <div class="people-card-list">
+      {% set issue_rows = (lunch_insights.danger_rows|default([])) + (lunch_insights.unknown_rows|default([])) %}
+      {% if issue_rows %}
+        {% for row in issue_rows[:8] %}
+        <div class="person-list-card {% if row.result == '경고' %}danger{% else %}warn{% endif %}">
+          <span class="person-avatar avatar-tone-{{ loop.index0 % 6 }}">{{ (row.name or row.rfid_id or '?')[:2] }}</span>
+          <div class="person-main">
+            <div class="person-title"><strong>{{ row.name or row.rfid_id or '-' }}</strong><span class="person-time">{{ row.scanned_at or '-' }}</span></div>
+            <div class="person-sub">{{ row.hit_names or '카드 등록 필요' }}</div>
+          </div>
+          <div class="person-side">{% if row.result == '경고' %}<span class="rfid-pill danger">위험</span>{% else %}<span class="rfid-pill warn">미등록</span>{% endif %}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">확인 대기 중인 위험/미등록 항목이 없습니다.</div>
+      {% endif %}
+    </div>
+  </article>
+</section>
+
+<section class="panel">
+  <div class="panel-title">
+    <div><h2>전체 급식명단 로그</h2><p>학생명, 학번, RFID, 판정 결과를 급식명단 형태로 확인합니다.</p></div>
+    <span class="badge muted">{{ lunch_log_rows|length }}건</span>
+  </div>
+  <div class="toolbar">
+    <input class="search-input js-table-filter" type="search" data-target="#lunchLogTable" placeholder="이름, 학번, RFID, 판정 검색">
+  </div>
+  <div class="data-table-wrap">
+    <table id="lunchLogTable" class="data-table">
+      <thead><tr><th>스캔 시각</th><th>학생</th><th>학적</th><th>RFID</th><th>판정</th><th>알레르기/메모</th></tr></thead>
+      <tbody>
+        {% if lunch_log_rows %}
+          {% for row in lunch_log_rows %}
+          <tr class="{% if row.result == '경고' %}row-danger{% endif %}">
+            <td>{{ row.scanned_at or '-' }}</td>
+            <td><strong>{{ row.name or '-' }}</strong><small>{{ row.student_number or '-' }}</small></td>
+            <td>{{ row.grade or '-' }}학년 {{ row.class_no or '-' }}반 {{ row.number or '-' }}번</td>
+            <td>{{ row.rfid_id or '-' }}</td>
+            <td>{% if row.result == '경고' %}<span class="badge danger">위험</span>{% elif row.result == 'OK' %}<span class="badge safe">안전</span>{% elif row.result == '미등록' %}<span class="badge warn">미등록</span>{% else %}<span class="badge muted">{{ row.result or '-' }}</span>{% endif %}</td>
+            <td>{{ row.hit_names or row.reason or '-' }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="6"><div class="empty-state"><strong>아직 표시할 로그가 없습니다.</strong><p>RFID 체크가 시작되면 급식명단 로그가 쌓입니다.</p></div></td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+<script src="{{ url_for('static', filename='admin/admin_ui_polish.js') }}"></script>
+{% endblock %}

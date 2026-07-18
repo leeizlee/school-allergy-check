@@ -48,6 +48,20 @@ The generated Raspberry Pi zip is a private deployment artifact because it can c
 
 When the admin server has a stable HTTPS address, set `ADMIN_SERVER_URL` on the Raspberry Pi to that URL.
 
+## Kiosk data minimization
+
+The Raspberry Pi sends only the RFID UID and kiosk token to `POST /api/kiosk/scan`.
+The device response contains only these indicator fields:
+
+- `ok` and `received`
+- `registered` (`true` only when the RFID exists; otherwise `false`)
+- `status` (`safe`, `danger`, `unregistered`, `unknown`, or `error`)
+- `allergy_codes` matched by the current meal
+- `led` and `buzzer`
+
+Student names, student numbers, meal names, detailed reasons, and the UID are not returned
+to the Raspberry Pi. Those details remain on the admin server for the web kiosk and logs.
+
 ## Important rotation note
 
 If any real API token or service account file was ever copied into a GitHub repository or shared in chat/logs, revoke it and create a new one before deployment.

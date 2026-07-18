@@ -1,0 +1,227 @@
+{% extends "base_admin.html" %}
+{% block page_actions %}
+  <button class="btn btn-outline admin-action-soft" type="button" onclick="openStudentSheetModal()">
+    <svg><use href="#i-upload"></use></svg>
+    시트 추가
+  </button>
+  <button class="btn btn-primary admin-action-primary" type="button" onclick="openStudentModal()">
+    <svg><use href="#i-users"></use></svg>
+    학생 추가
+  </button>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin/admin_v5_refine.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin/admin_ui_polish.css') }}">
+<div class="student-page product-page">
+  <section class="student-hero">
+    <div>
+      <span class="section-kicker">Student Registry</span>
+      <h2>학생 안전 데이터 운영 현황</h2>
+      <p>재학생, RFID, 알레르기 정보를 한 화면에서 확인하고 급식 안전 점검에 필요한 기초 데이터를 관리합니다.</p>
+    </div>
+    <div class="student-hero-summary" aria-label="학생 관리 요약">
+      <span>관리 대상</span>
+      <strong>{{ student_summary.total }}</strong>
+      <small>현재 필터 기준 학생</small>
+    </div>
+  </section>
+
+  <section class="student-kpi-grid" aria-label="학생관리 핵심 지표">
+    <article class="student-kpi student-kpi-total">
+      <div class="kpi-icon"><svg><use href="#i-users"></use></svg></div>
+      <div class="kpi-body">
+        <span>총 재학생</span>
+        <strong>{{ student_summary.total }}</strong>
+        <small>현재 선택한 학급/필터 기준</small>
+      </div>
+      <div class="kpi-spark mint" aria-hidden="true"></div>
+    </article>
+    <article class="student-kpi student-kpi-danger">
+      <div class="kpi-icon"><svg><use href="#i-shield"></use></svg></div>
+      <div class="kpi-body">
+        <span>알레르기 학생</span>
+        <strong>{{ student_summary.allergy }}</strong>
+        <small>전체 대비 {{ student_insights.allergy_rate }}%</small>
+      </div>
+      <div class="kpi-spark red" aria-hidden="true"></div>
+    </article>
+    <article class="student-kpi student-kpi-info">
+      <div class="kpi-icon"><svg><use href="#i-activity"></use></svg></div>
+      <div class="kpi-body">
+        <span>RFID 등록</span>
+        <strong>{{ student_summary.rfid }}</strong>
+        <small>등록률 {{ student_insights.rfid_rate }}%</small>
+      </div>
+      <div class="kpi-spark blue" aria-hidden="true"></div>
+    </article>
+    <article class="student-kpi student-kpi-warn">
+      <div class="kpi-icon"><svg><use href="#i-terminal"></use></svg></div>
+      <div class="kpi-body">
+        <span>RFID 미등록</span>
+        <strong>{{ student_summary.no_rfid }}</strong>
+        <small>카드 연결 확인 필요</small>
+      </div>
+      <div class="kpi-spark amber" aria-hidden="true"></div>
+    </article>
+  </section>
+
+  <section class="student-analytics-grid">
+    <article class="panel product-card progress-card">
+      <div class="panel-title product-card-title">
+        <div>
+          <span class="section-kicker">Completion</span>
+          <h2>학생 등록 완성도</h2>
+          <p>RFID 연결률과 알레르기 관리 비율을 함께 확인합니다.</p>
+        </div>
+      </div>
+      <div class="student-progress-list">
+        <div class="progress-row polished">
+          <div class="progress-label"><span>RFID 등록률</span><strong>{{ student_insights.rfid_rate }}%</strong></div>
+          <div class="progress-track"><div class="progress-fill" style="width: {{ student_insights.rfid_rate }}%;"></div></div>
+          <small>{{ student_summary.rfid }}명 등록, {{ student_summary.no_rfid }}명 확인 필요</small>
+        </div>
+        <div class="progress-row polished">
+          <div class="progress-label"><span>알레르기 학생 비율</span><strong>{{ student_insights.allergy_rate }}%</strong></div>
+          <div class="progress-track"><div class="progress-fill danger" style="width: {{ student_insights.allergy_rate }}%;"></div></div>
+          <small>알레르기 학생은 급식 체크 시 우선 확인 대상으로 표시됩니다.</small>
+        </div>
+      </div>
+    </article>
+    <article class="panel product-card chart-card chart-card-donut">
+      <div class="panel-title product-card-title">
+        <div>
+          <span class="section-kicker">RFID Coverage</span>
+          <h2>RFID 등록/미등록</h2>
+          <p>학생증 카드 연결 상태 분포</p>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas class="admin-chart donut" data-chart="rfid_mix" height="210"></canvas>
+      </div>
+    </article>
+  </section>
+
+  <section class="student-analytics-grid">
+    <article class="panel product-card chart-card">
+      <div class="panel-title product-card-title">
+        <div>
+          <span class="section-kicker">Class Distribution</span>
+          <h2>학급별 학생 수</h2>
+          <p>등록 학생 분포를 학급 단위로 비교합니다.</p>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas class="admin-chart student-bar-chart" data-chart="class_counts" height="230"></canvas>
+      </div>
+    </article>
+    <article class="panel product-card chart-card">
+      <div class="panel-title product-card-title">
+        <div>
+          <span class="section-kicker">Allergy Focus</span>
+          <h2>알레르기 코드별 학생 수</h2>
+          <p>주의가 필요한 알레르기 코드 분포</p>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas class="admin-chart student-bar-chart" data-chart="student_allergy_top" height="230"></canvas>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel product-card student-workbench">
+    <div class="panel-title product-card-title workbench-title">
+      <div>
+        <span class="section-kicker">Student Database</span>
+        <h2>학생 데이터 관리</h2>
+        <p>검색, 반 필터, 대량 선택 작업을 한 화면에서 처리합니다.</p>
+      </div>
+      <div class="button-row">
+        <button class="btn btn-light admin-action-soft" id="toggleStudentDeleteModeBtn" type="button" onclick="toggleStudentSelectionMode()">
+          삭제 선택
+        </button>
+        <button class="btn btn-danger hidden" id="deleteSelectedStudentsBtn" type="button" onclick="deleteSelectedStudents()">
+          선택 삭제
+        </button>
+      </div>
+    </div>
+
+    <div class="student-toolbar">
+      <label class="student-search-box" for="studentSearchInput">
+        <svg><use href="#i-search"></use></svg>
+        <input id="studentSearchInput" class="search-input" type="search" placeholder="이름, 학번, RFID, 알레르기 검색" oninput="filterStudentRows()">
+      </label>
+      <div class="student-toolbar-meta">
+        <span id="studentResultCount">{{ student_rows|length }}</span>
+        <small>명 표시 중</small>
+      </div>
+    </div>
+
+    <div class="student-filter-surface">
+      <div class="chip-row student-state-filters" aria-label="상태 필터">
+        <button class="chip active js-student-filter" type="button" data-filter="all">전체</button>
+        <button class="chip js-student-filter" type="button" data-filter="allergy">알레르기 있음</button>
+        <button class="chip js-student-filter" type="button" data-filter="no-allergy">알레르기 없음</button>
+        <button class="chip js-student-filter" type="button" data-filter="rfid">RFID 등록</button>
+        <button class="chip js-student-filter" type="button" data-filter="no-rfid">RFID 미등록</button>
+      </div>
+      <div class="chip-row student-class-filters" aria-label="학급 필터">
+        {% for class_item in available_classes %}
+          <a class="chip {% if selected_class == class_item.key %}active{% endif %}" href="{{ url_for('student_manage_page', class_key=class_item.key) }}">{{ class_item.label }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <span class="checkbox-cell hidden" id="studentCheckboxHeader" aria-hidden="true"></span>
+    <div class="student-card-list" role="list" aria-label="학생 목록">
+      {% if student_rows %}
+        {% for row in student_rows %}
+          <article class="student-card student-data-row" role="listitem" data-student-row="{{ row.row_index }}" data-has-allergy="{% if row.allergy_names and row.allergy_names != '없음' %}1{% else %}0{% endif %}" data-has-rfid="{% if row.rfid_id %}1{% else %}0{% endif %}" data-search="{{ ((row.rfid_id or '') ~ ' ' ~ (row.name or '') ~ ' ' ~ (row.student_number or '') ~ ' ' ~ (row.allergy_names or '') ~ ' ' ~ (row.class_label or '') ~ ' ' ~ (row.student_label or ''))|lower }}">
+            <span class="checkbox-cell hidden student-checkbox-cell student-select-pill"><input type="checkbox" class="student-row-checkbox" value="{{ row.row_index }}"></span>
+            <div class="student-card-avatar avatar-tone-{{ loop.index0 % 6 }}">
+              {% if row.picture %}<img src="{{ row.picture }}" alt="{{ row.name or '학생' }} 프로필">{% else %}{{ (row.name or '?')[:1] }}{% endif %}
+            </div>
+            <div class="student-card-main">
+              <div class="student-card-title">
+                <strong>{{ row.name or '-' }}</strong>
+                <span class="student-number">{{ row.student_number or '-' }}</span>
+              </div>
+              <div class="student-card-sub">
+                <span>{{ row.grade or '-' }}학년 {{ row.class_no or '-' }}반 {{ row.number or '-' }}번</span>
+                <span>·</span>
+                <span>{% if row.allergy_names and row.allergy_names != '없음' %}알레르기 관리 필요{% else %}등록된 알레르기 없음{% endif %}</span>
+              </div>
+              <div class="student-card-tags">
+                {% if row.allergy_names and row.allergy_names != '없음' %}
+                  <span class="badge danger">알레르기</span>
+                  <span class="allergy-chip">{{ row.allergy_names }}</span>
+                {% else %}
+                  <span class="badge safe">알레르기 없음</span>
+                {% endif %}
+                {% if row.created_by or row.created_at %}<span class="badge muted">{{ row.created_by or '-' }} · {{ row.created_at or '-' }}</span>{% endif %}
+              </div>
+            </div>
+            <div class="student-card-side">
+              {% if row.rfid_id %}
+                <span class="rfid-pill safe">{{ row.rfid_id }}</span>
+                <small>RFID 등록</small>
+              {% else %}
+                <span class="rfid-pill warn">미등록</span>
+                <small>카드 연결 필요</small>
+              {% endif %}
+              <button class="btn btn-light row-action-button" type="button" onclick='openStudentEditModal({{ row.row_index }}, {{ row.rfid_id|tojson }}, {{ row.name|tojson }}, {{ row.student_number|tojson }}, {{ row.allergy_codes|tojson }}, {{ (row.picture or '')|tojson }})'>수정</button>
+            </div>
+          </article>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state student-empty-state">
+          <span class="empty-state-icon"><svg><use href="#i-users"></use></svg></span>
+          <strong>조건에 맞는 학생이 없습니다.</strong>
+          <p>검색어 또는 필터를 변경해 보세요.</p>
+          <button class="btn btn-primary" type="button" onclick="openStudentModal()">학생 추가</button>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+<script src="{{ url_for('static', filename='admin/admin_ui_polish.js') }}"></script>
+{% endblock %}

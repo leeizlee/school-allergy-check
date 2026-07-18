@@ -6,9 +6,12 @@ kiosk_secrets.env
 !.env.example
 .venv/
 venv/
+.testdeps/
 runtime/
 uploads/*
 !uploads/.gitkeep
+static/profile_pictures/*
+!static/profile_pictures/.gitkeep
 deploy/raspberry_pi/
 deploy/raspberry_pi_onefile/
 deploy/*_private.env

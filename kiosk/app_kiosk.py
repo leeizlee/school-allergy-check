@@ -13,6 +13,32 @@ import requests
 
 APP_DIR = Path(__file__).resolve().parent
 
+
+def load_local_env_file(path: Path) -> None:
+    """Load simple KEY=VALUE secrets without overriding service environment values."""
+    if not path.is_file():
+        return
+
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[7:].strip()
+        if "=" not in line:
+            continue
+        name, value = line.split("=", 1)
+        name = name.strip()
+        value = value.strip()
+        if not name:
+            continue
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+            value = value[1:-1]
+        os.environ.setdefault(name, value)
+
+
+load_local_env_file(APP_DIR / "kiosk_secrets.env")
+
 # lgpio creates a .lgd-nfy* notification pipe in the current working directory
 # during import. Use a writable temp directory so systemd or root-based launches
 # do not fail with FileNotFoundError: '.lgd-nfy-*'.
@@ -68,13 +94,11 @@ ADMIN_SERVER_DISCOVERY_FILE = os.getenv(
 ).strip()
 
 KIOSK_SCAN_API_TOKEN = os.getenv("KIOSK_SCAN_API_TOKEN", "").strip()
-if not KIOSK_SCAN_API_TOKEN:
-    print("[WARN] KIOSK_SCAN_API_TOKEN is not set. The admin server may reject scans.")
 DEVICE_NAME = os.getenv("DEVICE_NAME", "raspberrypi-rfid-01").strip()
 REQUEST_TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "6"))
 DISCOVERY_REQUEST_TIMEOUT = float(os.getenv("DISCOVERY_REQUEST_TIMEOUT", "3"))
 DISCOVERY_REFRESH_SECONDS = float(os.getenv("DISCOVERY_REFRESH_SECONDS", "30"))
-POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "0.08"))
+POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "0.2"))
 RFID_DEDUP_SECONDS = float(os.getenv("RFID_DEDUP_SECONDS", "1.5"))
 POST_SCAN_DELAY = float(os.getenv("POST_SCAN_DELAY", "0.5"))
 SEND_TO_SERVER = os.getenv("SEND_TO_SERVER", "1").strip() != "0"
@@ -87,6 +111,9 @@ GREEN_PIN = int(os.getenv("GREEN_PIN", "27"))
 BLUE_PIN = int(os.getenv("BLUE_PIN", "22"))
 BUZZER_PIN = int(os.getenv("BUZZER_PIN", "23"))
 RST_PIN = int(os.getenv("RST_PIN", "25"))
+SPI_BUS = int(os.getenv("SPI_BUS", "0"))
+SPI_DEVICE = int(os.getenv("SPI_DEVICE", "0"))
+SPI_SPEED_HZ = int(os.getenv("SPI_SPEED_HZ", "100000"))
 
 DATE_FORMAT = "%Y%m%d"
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -106,17 +133,16 @@ SCAN_STOP_EVENT = threading.Event()
 
 last_scan = {
     "uid": None,
-    "name": None,
-    "status": "대기중",
-    "reason": "",
-    "menu_date": None,
-    "menu_name": None,
-    "student_number": "",
+    "status": "waiting",
+    "registered": False,
+    "allergy_codes": [],
+    "led": None,
+    "buzzer": None,
     "scanned_at": None,
 }
 
 rfid_state = {
-    "mode": "대기",
+    "mode": "waiting",
     "last_uid": None,
     "last_read_at": None,
     "last_error": "",
@@ -160,11 +186,7 @@ def publish_gui_ready(message: str = "Place a card near the reader.") -> None:
 
 
 def publish_gui_scan(uid_text: str, result=None, uid_hyphen="", read_warning="") -> None:
-    scan = {}
-    if isinstance(result, dict):
-        scan = result.get("scan") or {}
-        if not isinstance(scan, dict):
-            scan = {}
+    device_result = result if isinstance(result, dict) else {}
 
     if not SEND_TO_SERVER:
         server_text = "Not sent"
@@ -186,10 +208,11 @@ def publish_gui_scan(uid_text: str, result=None, uid_hyphen="", read_warning="")
         uid_hyphen=uid_hyphen or "-",
         scanned_at=now_time(),
         server=server_text,
-        name=str(scan.get("name") or "-"),
-        student_number=str(scan.get("student_number") or "-"),
-        menu_date=str(scan.get("menu_date") or scan.get("date") or "-"),
-        menu_name=str(scan.get("menu_name") or "-"),
+        status=str(device_result.get("status") or "-"),
+        registered="true" if device_result.get("registered") is True else "false",
+        allergy_codes=", ".join(device_result.get("allergy_codes") or []) or "-",
+        led=str(device_result.get("led") or "-"),
+        buzzer=str(device_result.get("buzzer") if device_result.get("buzzer") is not None else "-"),
         note=note,
     )
 
@@ -285,11 +308,10 @@ class RC522:
     CRCResultRegL = 0x22
     TxASKReg = 0x15
     RFCfgReg = 0x26
-
-    def __init__(self, chip=None, bus=0, device=0, rst_pin=RST_PIN):
+    def __init__(self, chip=None, bus=SPI_BUS, device=SPI_DEVICE, speed_hz=SPI_SPEED_HZ, rst_pin=RST_PIN):
         self.spi = spidev.SpiDev()
         self.spi.open(bus, device)
-        self.spi.max_speed_hz = 100000
+        self.spi.max_speed_hz = speed_hz
         self.spi.mode = 0
 
         self.rst_pin = rst_pin
@@ -300,6 +322,10 @@ class RC522:
 
         self.reset()
         self.init()
+        print(
+            f"[RFID] RC522 initialized "
+            f"SPI=/dev/spidev{bus}.{device} speed={speed_hz}Hz RST=GPIO{rst_pin}"
+        )
 
     def write_reg(self, reg, value):
         self.spi.xfer2([(reg << 1) & 0x7E, value])
@@ -447,11 +473,14 @@ class RC522:
             serial_number,
         )
 
-        if status == self.MI_OK and len(back_data) == 5:
-            for i in range(4):
-                serial_number_check ^= back_data[i]
+        if status == self.MI_OK:
+            if len(back_data) == 5:
+                for i in range(4):
+                    serial_number_check ^= back_data[i]
 
-            if serial_number_check != back_data[4]:
+                if serial_number_check != back_data[4]:
+                    status = self.MI_ERR
+            else:
                 status = self.MI_ERR
 
         return status, back_data
@@ -507,27 +536,12 @@ class RC522:
         status, uid = self.anticoll()
 
         if status != self.MI_OK:
-            self.last_read_error = "anticoll failed"
-            log_debug("RFID read warning: anticoll failed", uid)
-            if len(uid) >= 4:
-                return uid[:4]
-            return WRONG_READ
+            return None
 
-        if len(uid) != 5:
-            self.last_read_error = f"invalid UID length: {len(uid)}"
-            log_debug("RFID read warning:", self.last_read_error, uid)
-            if len(uid) >= 4:
-                return uid[:4]
-            return WRONG_READ
+        if self.select_tag(uid):
+            return uid[:4]
 
-        if not self.select_tag(uid):
-            self.last_read_error = "select_tag failed"
-            log_debug("RFID read warning: select_tag failed", uid)
-            if len(uid) >= 4:
-                return uid[:4]
-            return WRONG_READ
-
-        return uid[:4]
+        return None
 
     def close(self):
         try:
@@ -629,7 +643,7 @@ def refresh_server_base_url() -> str:
     latest = resolve_server_base_url()
     if latest != SERVER_BASE_URL:
         previous = SERVER_BASE_URL or "-"
-        print(f"[INFO] 관리자 서버 주소 갱신: {previous} -> {latest}")
+        print(f"[INFO] Admin server URL updated: {previous} -> {latest}")
         SERVER_BASE_URL = latest
     return SERVER_BASE_URL
 
@@ -639,16 +653,13 @@ def build_scan_url() -> str:
 
 
 def update_last_scan_from_server(result: dict) -> None:
-    scan = result.get("scan", {}) or {}
     with lock:
         last_scan.update({
-            "uid": scan.get("uid"),
-            "name": scan.get("name"),
-            "status": scan.get("status", "대기중"),
-            "reason": scan.get("reason", ""),
-            "menu_date": scan.get("menu_date") or scan.get("date"),
-            "menu_name": scan.get("menu_name"),
-            "student_number": scan.get("student_number", ""),
+            "status": result.get("status", "error"),
+            "registered": result.get("registered"),
+            "allergy_codes": result.get("allergy_codes") or [],
+            "led": result.get("led"),
+            "buzzer": result.get("buzzer"),
             "scanned_at": now_time(),
         })
 
@@ -657,42 +668,30 @@ def update_last_scan_error(uid: str, reason: str) -> None:
     with lock:
         last_scan.update({
             "uid": uid,
-            "name": None,
-            "status": "오류",
-            "reason": reason,
-            "menu_date": now_date(),
-            "menu_name": None,
-            "student_number": "",
+            "status": "error",
+            "registered": False,
+            "allergy_codes": [],
+            "led": "red",
+            "buzzer": True,
             "scanned_at": now_time(),
         })
 
 
 def print_server_result(result: dict) -> None:
-    ok = result.get("ok", False)
-    scan = result.get("scan", {}) or {}
-
     print("\n" + "=" * 56)
-    print(f"[SERVER OK] {ok}")
-    print(f"UID: {scan.get('uid', '-')}")
-    print(f"이름: {scan.get('name', '-')}")
-    print(f"학번: {scan.get('student_number', '-')}")
-    print(f"상태: {scan.get('status', '-')}")
-    print(f"메뉴 날짜: {scan.get('menu_date') or scan.get('date', '-')}")
-    print(f"메뉴명: {scan.get('menu_name', '-')}")
-    print(f"걸린 코드: {scan.get('hit_codes', '-')}")
-    print(f"걸린 알러지: {scan.get('hit_names', '-')}")
-    print("사유:")
-    print(scan.get("reason", "-"))
+    print(f"[SERVER OK] {result.get('ok', False)}")
+    print(f"Received: {result.get('received', False)}")
+    print(f"Registered: {result.get('registered', '-')}")
+    print(f"Status: {result.get('status', '-')}")
+    print(f"Allergy Codes: {', '.join(result.get('allergy_codes') or []) or '-'}")
+    print(f"Signal: LED={result.get('led', '-')} BUZZER={result.get('buzzer', '-')}")
     if result.get("error"):
-        print(f"오류: {result.get('error')}")
+        print(f"Error: {result.get('error')}")
     print("=" * 56)
 
 
 def extract_server_reason(data: dict) -> str:
-    scan = data.get("scan")
-    if not isinstance(scan, dict):
-        scan = {}
-    reason = data.get("reason") or scan.get("reason") or data.get("error")
+    reason = data.get("error") or data.get("status")
     return str(reason or "").strip()
 
 
@@ -700,13 +699,7 @@ def normalize_server_status(data: dict) -> str:
     if data.get("ok") is False:
         return "error"
 
-    scan = data.get("scan")
-    if not isinstance(scan, dict):
-        scan = {}
-
     raw_status = data.get("status")
-    if raw_status is None:
-        raw_status = scan.get("status")
 
     status_text = str(raw_status or "").strip().lower()
     log_debug("Raw server status:", raw_status)
@@ -714,28 +707,16 @@ def normalize_server_status(data: dict) -> str:
     safe_statuses = {
         "safe",
         "ok",
-        "안전",
-        "정상",
-        "알레르기 없음",
-        "알러지 없음",
     }
     danger_statuses = {
         "danger",
         "unsafe",
-        "위험",
-        "주의",
-        "경고",
-        "알레르기 있음",
-        "알러지 있음",
     }
     unknown_statuses = {
         "unknown",
         "unregistered",
         "not_registered",
         "not found",
-        "미등록",
-        "메뉴없음",
-        "없음",
     }
 
     if status_text in safe_statuses:
@@ -747,18 +728,8 @@ def normalize_server_status(data: dict) -> str:
     if status_text in unknown_statuses:
         return "unknown"
 
-    matched_allergies = scan.get("matched_allergies")
-    unsafe_menus = scan.get("unsafe_menus")
-    needs_staff_review = scan.get("needs_staff_review")
-
-    if isinstance(matched_allergies, list) and matched_allergies:
+    if isinstance(data.get("allergy_codes"), list) and data.get("allergy_codes"):
         return "danger"
-
-    if isinstance(unsafe_menus, list) and unsafe_menus:
-        return "danger"
-
-    if needs_staff_review is True:
-        return "unknown"
 
     if data.get("ok") is True and not status_text:
         return "safe"
@@ -787,11 +758,11 @@ def send_uid(uid: str) -> dict:
             data = response.json()
         except json.JSONDecodeError:
             body = response.text or ""
-            print("[ERROR] 서버 응답이 JSON 형식이 아니야.")
+            print("[ERROR] Server response is not JSON.")
             if not body.strip():
-                print("[DEBUG] 응답 본문이 비어 있어.")
+                print("[DEBUG] Response body is empty.")
             else:
-                print("[DEBUG] 응답 본문 미리보기:")
+                print("[DEBUG] Response body preview:")
                 print(body[:500])
             reason = "server response is not JSON"
             update_last_scan_error(uid, reason)
@@ -803,8 +774,7 @@ def send_uid(uid: str) -> dict:
             }
 
         print_server_result(data)
-        if "scan" in data:
-            update_last_scan_from_server(data)
+        update_last_scan_from_server(data)
 
         data["server_status"] = normalize_server_status(data)
         data["reason"] = extract_server_reason(data)
@@ -812,14 +782,14 @@ def send_uid(uid: str) -> dict:
         if response.ok and data.get("ok"):
             return data
 
-        reason = str(data.get("error") or "서버가 요청을 처리하지 못했어")
+        reason = str(data.get("error") or "server request failed")
         update_last_scan_error(uid, reason)
         data["ok"] = False
         data["reason"] = reason
         return data
     except requests.RequestException as exc:
         reason = str(exc)
-        print(f"[NETWORK ERROR] 서버 전송 실패: {reason}")
+        print(f"[NETWORK ERROR] Server request failed: {reason}")
         update_last_scan_error(uid, reason)
         return {
             "ok": False,
@@ -845,26 +815,35 @@ def apply_led_result(led_buzzer, result):
 
     if not result.get("ok"):
         led_buzzer.red_with_buzzer_signal()
-        return "잘못 인식됨", reason or "server send failed"
+        return "error", reason or "server send failed"
 
     if not USE_SERVER_RESPONSE:
         led_buzzer.green_signal()
-        return "알레르기 없음", "server send success"
+        return "safe", "server send success"
+
+    led = str(result.get("led") or "").strip().lower()
+    buzzer = bool(result.get("buzzer"))
+    if led == "green" and not buzzer:
+        led_buzzer.green_signal()
+    elif led == "red" and buzzer:
+        led_buzzer.red_with_buzzer_signal()
+    elif led == "red":
+        led_buzzer.red_signal()
+    else:
+        led_buzzer.red_with_buzzer_signal()
+        return "error", reason or "invalid device signal"
 
     server_status = result.get("server_status")
 
     if server_status == "safe":
-        led_buzzer.green_signal()
-        return "알레르기 없음", reason
+        return "safe", reason
     if server_status == "danger":
-        led_buzzer.red_signal()
-        return "알레르기 있음", reason
+        return "danger", reason
     if server_status == "unknown":
-        led_buzzer.red_with_buzzer_signal()
-        return "잘못 인식됨", reason or "unknown rfid"
+        return "unknown", reason or "unknown rfid"
 
     led_buzzer.red_with_buzzer_signal()
-    return "잘못 인식됨", reason or "server response error"
+    return "error", reason or "server response error"
 
 
 def update_rfid_state(mode: str, uid=None, error: str = "") -> None:
@@ -904,10 +883,10 @@ def run_local_gui(scan_target) -> bool:
         "Raw UID": tk.StringVar(value="-"),
         "Scan Time": tk.StringVar(value="-"),
         "Server": tk.StringVar(value="-"),
-        "Name": tk.StringVar(value="-"),
-        "Student No": tk.StringVar(value="-"),
-        "Menu Date": tk.StringVar(value="-"),
-        "Menu Name": tk.StringVar(value="-"),
+        "Status": tk.StringVar(value="-"),
+        "Registered": tk.StringVar(value="-"),
+        "Allergy Codes": tk.StringVar(value="-"),
+        "Signal": tk.StringVar(value="-"),
         "Note": tk.StringVar(value="-"),
     }
 
@@ -998,10 +977,10 @@ def run_local_gui(scan_target) -> bool:
             field_vars["Raw UID"].set(event.get("uid_hyphen") or "-")
             field_vars["Scan Time"].set(event.get("scanned_at") or "-")
             field_vars["Server"].set(event.get("server") or "-")
-            field_vars["Name"].set(event.get("name") or "-")
-            field_vars["Student No"].set(event.get("student_number") or "-")
-            field_vars["Menu Date"].set(event.get("menu_date") or "-")
-            field_vars["Menu Name"].set(event.get("menu_name") or "-")
+            field_vars["Status"].set(event.get("status") or "-")
+            field_vars["Registered"].set(event.get("registered") or "-")
+            field_vars["Allergy Codes"].set(event.get("allergy_codes") or "-")
+            field_vars["Signal"].set(f"LED={event.get('led') or '-'} / BUZZER={event.get('buzzer')}")
             field_vars["Note"].set(event.get("note") or "-")
             reset_after_id["value"] = root.after(3000, show_ready)
             return
@@ -1040,10 +1019,10 @@ def run_local_gui(scan_target) -> bool:
 def scan_loop() -> None:
     if lgpio is None or spidev is None:
         if LGPIO_IMPORT_ERROR:
-            print(f"[ERROR] lgpio 로드 실패: {LGPIO_IMPORT_ERROR}")
+            print(f"[ERROR] Failed to load lgpio: {LGPIO_IMPORT_ERROR}")
         if SPIDEV_IMPORT_ERROR:
-            print(f"[ERROR] spidev 로드 실패: {SPIDEV_IMPORT_ERROR}")
-        update_rfid_state("오류", error="lgpio 또는 spidev를 불러오지 못했어")
+            print(f"[ERROR] Failed to load spidev: {SPIDEV_IMPORT_ERROR}")
+        update_rfid_state("error", error="lgpio or spidev is unavailable")
         publish_gui_event("error", message="lgpio or spidev is not available.")
         return
 
@@ -1054,14 +1033,24 @@ def scan_loop() -> None:
     last_sent_time = 0.0
 
     try:
+        print(
+            f"[RFID] Initializing SPI=/dev/spidev{SPI_BUS}.{SPI_DEVICE} "
+            f"speed={SPI_SPEED_HZ}Hz RST=GPIO{RST_PIN}"
+        )
         chip = lgpio.gpiochip_open(0)
         led_buzzer = LEDBuzzer(chip)
-        reader = RC522(chip=chip, rst_pin=RST_PIN)
+        reader = RC522(
+            chip=chip,
+            bus=SPI_BUS,
+            device=SPI_DEVICE,
+            speed_hz=SPI_SPEED_HZ,
+            rst_pin=RST_PIN,
+        )
 
-        update_rfid_state("감시중")
+        update_rfid_state("ready")
         publish_gui_ready()
         print("ready for scan")
-        print("[INFO] 카드 태그 대기 중... Ctrl+C로 종료")
+        print("[INFO] Waiting for a card. Press Ctrl+C to stop.")
 
         while not SCAN_STOP_EVENT.is_set():
             try:
@@ -1073,7 +1062,7 @@ def scan_loop() -> None:
                         log_debug("Card removed. Ready for next scan.")
                         last_uid = None
                         led_buzzer.all_off()
-                        update_rfid_state("감시중", error="")
+                        update_rfid_state("ready", error="")
                         publish_gui_ready()
                     time.sleep(POLL_INTERVAL)
                     continue
@@ -1088,8 +1077,8 @@ def scan_loop() -> None:
                         continue
 
                     last_uid = uid_text
-                    update_rfid_state("잘못 인식됨", uid=uid_text, error=reason)
-                    print(f"\n[SCAN] UID 감지 실패: {uid_text}")
+                    update_rfid_state("read_error", uid=uid_text, error=reason)
+                    print(f"\n[SCAN] UID read failed: {uid_text}")
 
                     if SEND_TO_SERVER:
                         result = send_uid(uid_text)
@@ -1099,12 +1088,12 @@ def scan_loop() -> None:
                         publish_gui_scan(uid_text, result=result, read_warning=reason)
                     else:
                         led_buzzer.red_with_buzzer_signal()
-                        status_text = "잘못 인식됨"
+                        status_text = "error"
                         update_last_scan_error(uid_text, reason)
                         publish_gui_scan(uid_text, read_warning=reason)
 
                     print_scan_summary(uid_text, status_text, reason)
-                    update_rfid_state("감시중", uid=uid_text, error=reason)
+                    update_rfid_state("ready", uid=uid_text, error=reason)
                     time.sleep(POST_SCAN_DELAY)
                     continue
 
@@ -1117,8 +1106,8 @@ def scan_loop() -> None:
                     continue
 
                 last_uid = uid_text
-                update_rfid_state("태그 감지", uid=uid_text, error=read_warning)
-                print(f"\n[SCAN] UID 감지: {uid_text}")
+                update_rfid_state("card_detected", uid=uid_text, error=read_warning)
+                print(f"\n[SCAN] UID detected: {uid_text}")
                 log_debug("Decimal UID (hyphen):", uid_hyphen_text)
                 log_debug("HEX UID:", " ".join(hex(x) for x in uid))
                 log_debug("Server UID:", uid_text)
@@ -1139,7 +1128,7 @@ def scan_loop() -> None:
                 else:
                     log_debug("Server send skipped: local RFID scan success mode")
                     led_buzzer.green_signal()
-                    status_text = "알레르기 없음"
+                    status_text = "safe"
                     reason = "local RFID scan success"
                     publish_gui_scan(
                         uid_text,
@@ -1148,18 +1137,28 @@ def scan_loop() -> None:
                     )
 
                 print_scan_summary(uid_text, status_text, reason)
-                update_rfid_state("감시중", uid=uid_text, error=read_warning)
+                update_rfid_state("ready", uid=uid_text, error=read_warning)
                 time.sleep(POST_SCAN_DELAY)
             except KeyboardInterrupt:
                 raise
             except Exception as exc:
-                print(f"[ERROR] RFID 오류: {exc}")
-                update_rfid_state("오류", error=str(exc))
+                print(f"[ERROR] RFID error: {exc}")
+                update_rfid_state("error", error=str(exc))
                 publish_gui_event("error", message=str(exc))
                 if led_buzzer is not None:
                     led_buzzer.red_with_buzzer_signal()
 
             time.sleep(POLL_INTERVAL)
+    except Exception as exc:
+        message = f"Hardware initialization failed: {exc}"
+        print(f"[ERROR] {message}")
+        update_rfid_state("error", error=message)
+        publish_gui_event("error", message=message)
+        if led_buzzer is not None:
+            try:
+                led_buzzer.red_with_buzzer_signal()
+            except Exception:
+                pass
     finally:
         if led_buzzer is not None:
             led_buzzer.all_off()
@@ -1175,8 +1174,13 @@ def scan_loop() -> None:
 
 
 def main() -> None:
+    if len(KIOSK_SCAN_API_TOKEN) < 24:
+        raise RuntimeError(
+            "KIOSK_SCAN_API_TOKEN must be at least 24 characters. "
+            "Set the same value as the admin server in kiosk_secrets.env."
+        )
     refresh_server_base_url()
-    print(f"[INFO] 서버 주소: {build_scan_url()}")
+    print(f"[INFO] Server URL: {build_scan_url()}")
 
     discovery_url = build_discovery_url()
     if discovery_url:
@@ -1191,4 +1195,4 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n[INFO] 종료 중...")
+        print("\n[INFO] Stopping...")

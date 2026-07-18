@@ -1,0 +1,77 @@
+{% extends "base_admin.html" %}
+{% block eyebrow %}AI SAFETY ROOM{% endblock %}
+{% block page_actions %}<a class="btn btn-outline" href="{{ url_for('ai_job_history_page') }}">AI 작업 기록</a><a class="btn btn-outline" href="{{ url_for('review_queue_page') }}">검토 대기함</a><button class="btn btn-primary" type="button" onclick="loadAiSafetyPlan()">안전계획 생성</button>{% endblock %}
+{% block content %}
+<section class="ai-hero safety-room"><div><h2>AI 안전 상황실</h2><p>학생별 알레르기와 오늘 급식 정보를 바탕으로 관리자의 판단을 돕는 보조 분석 화면입니다.</p><small>AI는 보조 도구이며 최종 판단은 담당자가 확인해야 합니다.</small></div><div class="stat-mini-row"><span>{{ role_label|default('관리자') }}</span><span>학생 {{ student_rows|length }}</span><span>오늘 위험 {{ today_stats.warning_count }}</span></div></section>
+
+<section class="stat-grid">
+  <article class="stat-card danger with-icon"><span class="stat-icon">ST</span><span>위험 가능 학생</span><strong>{{ ai_room.summary.risky_student_count|default(0) }}</strong><small>오늘 식단과 학생 알레르기 교차 분석</small><div class="mini-bars red"></div></article>
+  <article class="stat-card warn with-icon"><span class="stat-icon">ME</span><span>위험 가능 메뉴</span><strong>{{ ai_room.summary.risky_menu_count|default(0) }}</strong><small>주의 학생과 매칭된 메뉴</small><div class="mini-bars amber"></div></article>
+  <article class="stat-card ai with-icon"><span class="stat-icon">AI</span><span>집중 코드</span><strong>{{ ai_room.summary.allergy_code_count|default(0) }}</strong><small>오늘 식단 알레르기 코드 종류</small><div class="mini-bars blue"></div></article>
+  <article class="stat-card safe with-icon"><span class="stat-icon">OK</span><span>AI 판단 상태</span><strong>{{ ai_room.summary.risk_level|default('안정') }}</strong><small>최종 판단은 담당자가 확인</small><div class="mini-bars mint"></div></article>
+</section>
+
+<section class="dashboard-grid">
+  <article class="panel">
+    <div class="panel-title"><div><h2>오늘 가장 위험한 학생 TOP5</h2><p>학생 알레르기와 오늘 메뉴 코드가 겹치는 순서입니다.</p></div></div>
+    <div class="item-list">
+      {% if ai_room.risky_students %}
+        {% for item in ai_room.risky_students %}
+        <div class="list-row"><div><strong>{{ loop.index }}. {{ item.name }}</strong><small>{{ item.class_label }} · {{ item.student_number }} · {{ item.allergies }}</small></div><span class="badge danger">{{ item.risk_count }}개 메뉴</span></div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state"><strong>오늘 고위험 학생 매칭이 없습니다.</strong><p>등록된 식단과 학생 알레르기 기준으로 계산했습니다.</p></div>
+      {% endif %}
+    </div>
+  </article>
+  <article class="panel">
+    <div class="panel-title"><div><h2>오늘 가장 위험한 메뉴 TOP5</h2><p>영향 받을 수 있는 학생 수가 많은 메뉴입니다.</p></div></div>
+    <div class="item-list">
+      {% if ai_room.risky_menus %}
+        {% for item in ai_room.risky_menus %}
+        <div class="list-row"><div><strong>{{ loop.index }}. {{ item.menu }}</strong><small>{{ item.codes|join(', ') }}</small></div><span class="badge danger">{{ item.student_count }}명</span></div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state"><strong>오늘 위험 가능 메뉴가 없습니다.</strong><p>알레르기 코드가 없거나 대상 학생과 겹치지 않습니다.</p></div>
+      {% endif %}
+    </div>
+  </article>
+  <article class="panel panel-wide">
+    <div class="panel-title"><div><h2>AI 권장 조치</h2><p>현장 담당자가 먼저 확인하면 좋은 항목입니다.</p></div><span class="badge ai">보조 분석</span></div>
+    <div class="alert-stack">
+      {% for item in ai_room.recommendations %}
+      <div class="alert-panel {% if ai_room.summary.risky_student_count|default(0) %}warn{% else %}safe{% endif %}"><span class="alert-icon">AI</span><div><strong>권장 조치 {{ loop.index }}</strong><p>{{ item }}</p></div></div>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section class="dashboard-grid equal">
+  <article class="panel"><div class="panel-title"><div><h2>오늘 급식 알레르기 분포</h2><p>메뉴 코드 기준 위험 요인</p></div></div><canvas class="admin-chart" data-chart="menu_allergy_top" height="200"></canvas></article>
+  <article class="panel"><div class="panel-title"><div><h2>위험 가능 메뉴 비율</h2><p>알레르기 코드 포함 메뉴 구성</p></div></div><canvas class="admin-chart donut" data-chart="menu_risk_mix" height="200"></canvas></article>
+</section>
+
+<section class="dashboard-grid">
+  <article class="panel">
+    <div class="panel-title"><div><h2>분석 조건</h2><p>학생과 날짜, 현장 메모를 선택합니다.</p></div></div>
+    <div class="field-stack"><label class="field-label">급식 날짜</label><select id="aiDateSelect">{% for item in ai_date_options %}<option value="{{ item }}" {% if item == today_sheet %}selected{% endif %}>{{ item[:4] }}-{{ item[4:6] }}-{{ item[6:8] }}</option>{% endfor %}</select><label class="field-label">학생 선택</label><select id="aiStudentSelect"><option value="">학생 선택</option>{% for row in student_rows %}<option value="{{ row.student_number }}">{{ row.class_label }} {{ row.student_label }} {{ row.name }} · {{ row.allergy_names or '알레르기 없음' }}</option>{% endfor %}</select><label class="field-label">상황 메모</label><textarea id="aiContextInput" rows="4" placeholder="예: 우유 알레르기 학생 대체식을 먼저 확인"></textarea><div class="button-row"><button class="btn btn-primary" type="button" onclick="loadAiSafetyPlan()">학생 안전계획</button><button class="btn btn-light" type="button" onclick="loadAiDailyBrief()">오늘 브리핑</button><button class="btn btn-light" type="button" onclick="loadAiMenuReview()">메뉴 코드점검</button><button class="btn btn-light" type="button" onclick="requestAlternativeMeal()">대체급식 추천</button><button class="btn btn-ghost" type="button" onclick="clearAiResults()">결과 지우기</button></div><div id="aiStatusBox" class="ai-status hidden"></div></div>
+  </article>
+  <article class="panel panel-wide">
+    <div class="panel-title"><div><h2>오늘 급식 위험 브리핑</h2><p>오늘 메뉴와 주의 상태를 먼저 살펴봅니다.</p></div></div>
+    <div class="item-list">{% if dashboard.today_menus %}{% for menu in dashboard.today_menus[:8] %}<div class="list-row"><div><strong>{{ menu.menu_name or '-' }}</strong><small>{{ menu.allergy_names or '알레르기 코드 없음' }}</small></div>{% if menu.allergy_names and menu.allergy_names != '없음' %}<span class="badge danger">점검</span>{% else %}<span class="badge safe">안전</span>{% endif %}</div>{% endfor %}{% else %}<div class="empty-state">오늘 등록된 급식 메뉴가 없습니다.</div>{% endif %}</div>
+  </article>
+</section>
+
+<section class="dashboard-grid">
+  <article class="panel panel-wide"><div class="panel-title"><div><h2>학생별 안전계획 결과</h2><p>위험 메뉴, 대체급식, 전달 메시지를 카드형 결과로 확인합니다.</p></div></div><div id="aiSafetyResult" class="result-panel"><div class="empty-state">학생을 선택하고 학생 안전계획을 실행해줘.</div></div></article>
+  <article class="panel"><div class="panel-title"><div><h2>사고 대응</h2><p>응급 상황 단계별 안내</p></div></div><div id="aiEmergencyResult" class="result-panel"><div class="empty-state">안전계획 결과와 함께 표시됩니다.</div></div></article>
+</section>
+<section class="dashboard-grid">
+  <article class="panel"><div class="panel-title"><div><h2>오늘 브리핑</h2><p>주의 학생과 운영 포인트</p></div></div><div id="aiBriefResult" class="result-panel"><div class="empty-state">오늘 브리핑을 실행해줘.</div></div></article>
+  <article class="panel panel-wide"><div class="panel-title"><div><h2>메뉴 코드 점검</h2><p>알레르기 코드 누락 가능성 검토</p></div></div><div id="aiReviewResult" class="result-panel"><div class="empty-state">메뉴 코드점검을 실행해줘.</div></div></article>
+</section>
+<section class="panel alternative-result-panel">
+  <div class="panel-title"><div><h2>대체급식 추천/검토</h2><p>추천 결과는 검토 대기함에 pending 상태로 저장되며, 승인된 항목만 실제 급식에 반영됩니다.</p></div><span class="badge warn">관리자 승인 필요</span></div>
+  <div id="aiAlternativeResult" class="result-panel"><div class="empty-state">학생을 선택하고 대체급식 추천을 실행해줘.</div></div>
+</section>
+{% endblock %}

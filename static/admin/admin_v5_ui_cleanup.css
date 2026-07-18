@@ -1,0 +1,410 @@
+/* v5.3 UI cleanup: theme consistency, activity lists, and modal polish. */
+.admin-v5 {
+  --ui-bg: #f3f6fb;
+  --ui-surface: #ffffff;
+  --ui-surface-soft: #f8fafc;
+  --ui-border: #e4e9f2;
+  --ui-border-soft: #eef2f7;
+  --ui-text: #111827;
+  --ui-muted: #667085;
+  --ui-brand: #55c3aa;
+  --ui-brand-dark: #2f9e86;
+  --ui-radius: 8px;
+  --ui-shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 16px 35px rgba(16, 24, 40, .06);
+}
+
+body:not(.light-mode).admin-v5 {
+  --ui-bg: #101724;
+  --ui-surface: #172233;
+  --ui-surface-soft: #111827;
+  --ui-border: #334155;
+  --ui-border-soft: #263447;
+  --ui-text: #eef4ff;
+  --ui-muted: #a8b3c5;
+  --ui-shadow: 0 1px 2px rgba(0, 0, 0, .22), 0 18px 42px rgba(0, 0, 0, .28);
+}
+
+.admin-v5 .admin-main,
+.admin-v5 .page,
+.admin-v5 .panel,
+.admin-v5 .stat-card,
+.admin-v5 .dashboard-grid,
+.admin-v5 .stat-grid,
+.admin-v5 .student-card,
+.admin-v5 .student-card-list,
+.admin-v5 .student-list-card,
+.admin-v5 .student-activity-row,
+.admin-v5 .people-card-list,
+.admin-v5 .person-list-card,
+.admin-v5 .activity-card-row {
+  min-width: 0;
+}
+
+.admin-v5 .panel,
+.admin-v5 .stat-card,
+.admin-v5 .student-card,
+.admin-v5 .student-list-card,
+.admin-v5 .person-list-card {
+  background: var(--ui-surface);
+  border-color: var(--ui-border);
+  color: var(--ui-text);
+  box-shadow: var(--ui-shadow);
+}
+
+.admin-v5 .empty-state,
+.admin-v5 .mini-metric,
+.admin-v5 .notification-panel {
+  background: var(--ui-surface);
+  border-color: var(--ui-border);
+  color: var(--ui-text);
+}
+
+body:not(.light-mode).admin-v5 .admin-main,
+body:not(.light-mode).admin-v5 .page {
+  background: var(--ui-bg);
+  color: var(--ui-text);
+}
+
+body:not(.light-mode).admin-v5 .topbar {
+  background: #111827;
+  border-color: var(--ui-border-soft);
+  color: var(--ui-text);
+}
+
+.admin-v5 .docs-button {
+  background: #f4fffc !important;
+  border: 1px solid #bce7df !important;
+  color: var(--ui-brand-dark) !important;
+  box-shadow: none !important;
+}
+
+.admin-v5 .docs-button:hover {
+  background: #eafff8 !important;
+  border-color: #9eddd2 !important;
+  color: #257e6b !important;
+}
+
+.admin-v5 .dashboard-grid {
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, .75fr);
+  align-items: stretch;
+}
+
+.admin-v5 .dashboard-grid.equal {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-v5 .lunch-summary-metrics,
+.admin-v5 .lunch-roster-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+  min-width: 0;
+}
+
+.admin-v5 .mini-metric {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ui-border-soft);
+  border-radius: var(--ui-radius);
+  padding: 15px 16px;
+}
+
+.admin-v5 .mini-metric strong {
+  display: block;
+  color: var(--ui-text);
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.admin-v5 .mini-metric span {
+  display: block;
+  margin-top: 7px;
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+
+.admin-v5 .student-card-list,
+.admin-v5 .people-card-list,
+.admin-v5 .activity-card-list {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.admin-v5 .people-card-list,
+.admin-v5 .activity-card-list {
+  padding: 0 16px 12px;
+}
+
+.admin-v5 .people-card-list.short,
+.admin-v5 .activity-card-list.short {
+  max-height: 340px;
+  overflow: auto;
+  padding-right: 10px;
+}
+
+.admin-v5 .student-card,
+.admin-v5 .person-list-card,
+.admin-v5 .activity-card-row {
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid var(--ui-border-soft);
+  border-radius: var(--ui-radius);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.admin-v5 .student-card {
+  display: grid;
+  grid-template-columns: auto 42px minmax(0, 1fr) minmax(160px, 230px);
+  gap: 14px;
+  align-items: center;
+  min-height: 82px;
+  padding: 14px 16px;
+  transition: background .12s ease, border-color .12s ease;
+}
+
+.admin-v5 .student-card:hover,
+.admin-v5 .person-list-card:hover {
+  background: color-mix(in srgb, var(--ui-brand) 6%, var(--ui-surface));
+}
+
+.admin-v5 .student-card-avatar,
+.admin-v5 .person-avatar,
+.admin-v5 .activity-avatar,
+.admin-v5 .student-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--ui-brand);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .25);
+}
+
+.admin-v5 .student-card-avatar img,
+.admin-v5 .person-avatar img,
+.admin-v5 .activity-avatar img,
+.admin-v5 .student-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-v5 .avatar-tone-0 { background: #55c3aa; }
+.admin-v5 .avatar-tone-1 { background: #3f7dcc; }
+.admin-v5 .avatar-tone-2 { background: #4caf50; }
+.admin-v5 .avatar-tone-3 { background: #dd9a2b; }
+.admin-v5 .avatar-tone-4 { background: #9b43c6; }
+.admin-v5 .avatar-tone-5 { background: #c3453d; }
+.admin-v5 .person-avatar.safe,
+.admin-v5 .activity-avatar.safe { background: #47b881; }
+.admin-v5 .person-avatar.warn,
+.admin-v5 .activity-avatar.warn { background: #f0ad4e; }
+.admin-v5 .person-avatar.danger,
+.admin-v5 .activity-avatar.danger { background: #e55353; }
+
+.admin-v5 .student-card-main,
+.admin-v5 .person-main,
+.admin-v5 .activity-card-copy {
+  min-width: 0;
+}
+
+.admin-v5 .student-card-title,
+.admin-v5 .person-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-v5 .student-card-title strong,
+.admin-v5 .person-title strong,
+.admin-v5 .activity-card-copy strong {
+  display: block;
+  color: var(--ui-text);
+  font-size: 14px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-v5 .student-number {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--ui-surface-soft);
+  border: 1px solid var(--ui-border-soft);
+  color: var(--ui-muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-v5 .student-card-sub,
+.admin-v5 .person-sub,
+.admin-v5 .activity-card-copy small,
+.admin-v5 .student-card-side small,
+.admin-v5 .person-side small {
+  display: block;
+  margin-top: 4px;
+  color: var(--ui-muted);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-v5 .student-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.admin-v5 .student-card-side,
+.admin-v5 .person-side {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  min-width: 0;
+}
+
+.admin-v5 .person-list-card,
+.admin-v5 .activity-card-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 64px;
+  padding: 12px 14px;
+  background: var(--ui-surface);
+}
+
+.admin-v5 .rfid-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 27px;
+  max-width: 100%;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-soft);
+  color: var(--ui-muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-v5 .rfid-pill.safe {
+  border-color: rgba(71, 184, 129, .28);
+  background: rgba(71, 184, 129, .12);
+  color: #24885b;
+}
+
+.admin-v5 .rfid-pill.warn {
+  border-color: rgba(240, 173, 78, .35);
+  background: rgba(240, 173, 78, .14);
+  color: #9a650e;
+}
+
+body:not(.light-mode).admin-v5 .rfid-pill.safe { color: #7ee0a8; }
+body:not(.light-mode).admin-v5 .rfid-pill.warn { color: #ffd08a; }
+
+.admin-v5 #myAccountModal .modal,
+.admin-v5 #myAccountModal .modal-card {
+  width: min(760px, calc(100vw - 32px));
+  border-radius: 12px;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  border: 1px solid var(--ui-border) !important;
+  box-shadow: 0 28px 90px rgba(15, 23, 42, .28);
+}
+
+.admin-v5 #myAccountModal input,
+.admin-v5 #myAccountModal select,
+.admin-v5 #myAccountModal textarea {
+  background: var(--ui-surface-soft) !important;
+  border-color: var(--ui-border) !important;
+  color: var(--ui-text) !important;
+}
+
+.admin-v5 #myAccountModal .profile-uploader,
+.admin-v5 .profile-uploader.profile-upload-card,
+.admin-v5 .profile-edit-modal,
+.admin-v5 .profile-edit-preview {
+  background: var(--ui-surface) !important;
+  border-color: var(--ui-border) !important;
+  color: var(--ui-text) !important;
+}
+
+.admin-v5 .profile-edit-head,
+.admin-v5 .profile-crop-controls {
+  background: var(--ui-surface-soft) !important;
+  border-color: var(--ui-border-soft) !important;
+}
+
+.admin-v5 .profile-upload-copy strong,
+.admin-v5 .profile-edit-head h2,
+.admin-v5 .profile-edit-preview strong {
+  color: var(--ui-text) !important;
+}
+
+.admin-v5 .profile-upload-copy small,
+.admin-v5 .profile-edit-head p,
+.admin-v5 .profile-edit-preview small,
+.admin-v5 .profile-crop-status {
+  color: var(--ui-muted) !important;
+}
+
+@media (max-width: 1100px) {
+  .admin-v5 .dashboard-grid,
+  .admin-v5 .dashboard-grid.equal {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 820px) {
+  .admin-v5 .lunch-summary-metrics,
+  .admin-v5 .lunch-roster-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-v5 .student-card {
+    grid-template-columns: auto 38px minmax(0, 1fr);
+  }
+
+  .admin-v5 .student-card-side {
+    grid-column: 3;
+    justify-items: start;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-v5 .lunch-summary-metrics,
+  .admin-v5 .lunch-roster-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-v5 .person-list-card,
+  .admin-v5 .activity-card-row {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
+  .admin-v5 .person-list-card > :last-child,
+  .admin-v5 .activity-card-row > :last-child {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

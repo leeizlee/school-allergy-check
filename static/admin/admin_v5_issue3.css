@@ -1,0 +1,212 @@
+/* Issue #3 stability and workflow refinements. Loaded after the existing v5 theme. */
+.admin-v5 .brand .admin-brand-logo{width:48px!important;height:42px!important;min-width:48px!important;padding:3px!important;background:rgba(255,255,255,.08)!important;overflow:hidden!important}
+.admin-v5 .brand .admin-brand-logo img{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important}
+body.sidebar-collapsed.admin-v5 .brand{padding:11px 6px!important}
+body.sidebar-collapsed.admin-v5 .brand .admin-brand-logo{width:46px!important;height:40px!important;min-width:46px!important;margin:0!important;padding:3px!important}
+.admin-v5.modal-open{overflow:hidden!important}
+.admin-v5 .modal-backdrop.hidden{display:none!important}
+.admin-v5 .modal-backdrop:not(.hidden){
+  position:fixed!important;
+  inset:0!important;
+  z-index:1200!important;
+  display:grid!important;
+  place-items:center!important;
+  width:100vw!important;
+  height:100vh!important;
+  padding:24px!important;
+  overflow:auto!important;
+  background:rgba(15,23,42,.62)!important;
+  backdrop-filter:blur(4px)!important;
+}
+.admin-v5 #myAccountModal>.modal,
+.admin-v5 #studentModal>.modal,
+.admin-v5 #studentEditModal>.modal,
+.admin-v5 #studentSheetModal>.modal,
+.admin-v5 #menuModal>.modal,
+.admin-v5 #menuEditModal>.modal{
+  position:relative!important;
+  inset:auto!important;
+  width:min(720px,calc(100vw - 48px))!important;
+  max-width:100%!important;
+  max-height:calc(100vh - 48px)!important;
+  margin:auto!important;
+  padding:22px!important;
+  overflow:auto!important;
+  border:1px solid var(--ui-border,#d8e0ea)!important;
+  border-radius:12px!important;
+  background:var(--ui-surface,#fff)!important;
+  color:var(--ui-text,#101828)!important;
+  box-shadow:0 30px 100px rgba(15,23,42,.36)!important;
+}
+.admin-v5 #studentEditModal>.modal{width:min(680px,calc(100vw - 48px))!important}
+.admin-v5 #studentSheetModal>.modal{width:min(1100px,calc(100vw - 48px))!important}
+.admin-v5 .modal-backdrop .modal-header{
+  position:sticky!important;
+  top:-22px!important;
+  z-index:2!important;
+  margin:-22px -22px 18px!important;
+  padding:18px 22px!important;
+  border-bottom:1px solid var(--ui-border-soft,#edf1f6)!important;
+  background:var(--ui-surface,#fff)!important;
+}
+.admin-v5 .modal-backdrop .modal-footer{
+  position:sticky!important;
+  bottom:-22px!important;
+  z-index:2!important;
+  margin:18px -22px -22px!important;
+  padding:16px 22px!important;
+  border-top:1px solid var(--ui-border-soft,#edf1f6)!important;
+  background:var(--ui-surface,#fff)!important;
+}
+body:not(.light-mode).admin-v5 .modal-backdrop:not(.hidden){background:rgba(3,8,18,.76)!important}
+body:not(.light-mode).admin-v5 .modal-backdrop>.modal,
+body:not(.light-mode).admin-v5 .modal-backdrop .modal-header,
+body:not(.light-mode).admin-v5 .modal-backdrop .modal-footer{background:#172233!important;color:#eef4ff!important;border-color:#334155!important}
+
+/* Student list: stable left information / right RFID action split. */
+.admin-v5 .student-page .student-card-list{width:100%!important;max-width:100%!important;min-width:0!important;overflow:hidden!important}
+.admin-v5 .student-page .student-card{
+  display:grid!important;
+  grid-template-columns:44px minmax(0,1fr) minmax(148px,190px)!important;
+  grid-template-areas:"avatar main side"!important;
+  align-items:center!important;
+  gap:14px!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  padding:14px 16px!important;
+  overflow:hidden!important;
+}
+.admin-v5 .student-page .student-card>.student-checkbox-cell{position:absolute!important;left:8px!important;top:8px!important}
+.admin-v5 .student-page .student-card.selection-visible{padding-left:42px!important}
+.admin-v5 .student-page .student-card-avatar{grid-area:avatar!important;width:42px!important;height:42px!important}
+.admin-v5 .student-page .student-card-main{grid-area:main!important;min-width:0!important;max-width:100%!important;overflow:hidden!important}
+.admin-v5 .student-page .student-card-side{
+  grid-area:side!important;
+  min-width:0!important;
+  max-width:190px!important;
+  justify-self:end!important;
+  align-items:flex-end!important;
+  text-align:right!important;
+}
+.admin-v5 .student-page .student-card-title,
+.admin-v5 .student-page .student-card-sub,
+.admin-v5 .student-page .student-card-tags{min-width:0!important;max-width:100%!important}
+.admin-v5 .student-page .student-card-tags .allergy-chip{
+  display:inline-flex!important;
+  max-width:min(100%,520px)!important;
+  width:auto!important;
+  min-width:0!important;
+  padding:5px 9px!important;
+  white-space:normal!important;
+  word-break:keep-all!important;
+  overflow-wrap:anywhere!important;
+  line-height:1.45!important;
+}
+.admin-v5 .student-page .rfid-pill{max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important}
+
+/* Pending profile preview remains local until the account form is saved. */
+.admin-v5 #myAccountModal .profile-uploader.profile-upload-card{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  gap:14px 20px!important;
+  align-items:center!important;
+}
+.admin-v5 #myAccountModal .profile-upload-copy{display:grid!important;grid-template-columns:76px minmax(0,1fr)!important;gap:14px!important;align-items:center!important;min-width:0!important}
+.admin-v5 #myAccountModal .profile-upload-actions{display:grid!important;justify-items:end!important;gap:7px!important}
+.admin-v5 #myAccountModal .profile-history-grid{
+  grid-column:1/-1!important;
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:10px!important;
+  min-width:0!important;
+}
+.admin-v5 #myAccountModal .profile-history-item{
+  display:grid!important;
+  grid-template-columns:54px minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:12px!important;
+  min-width:0!important;
+  padding:12px!important;
+  border:1px dashed var(--ui-border,#d8e0ea)!important;
+  border-radius:8px!important;
+  background:var(--ui-surface-soft,#f8fafc)!important;
+  color:var(--ui-muted,#667085)!important;
+}
+.admin-v5 #myAccountModal .profile-history-item[hidden]{display:none!important}
+.admin-v5 #myAccountModal .profile-history-avatar{width:54px!important;height:54px!important;min-width:54px!important}
+.admin-v5 #myAccountModal .profile-history-copy{display:grid!important;gap:4px!important;min-width:0!important}
+.admin-v5 #myAccountModal .profile-history-copy strong{font-size:13px!important;font-weight:700!important;color:var(--ui-text,#101828)!important;white-space:nowrap!important}
+.admin-v5 #myAccountModal .profile-history-copy small{margin:0!important;line-height:1.45!important;overflow-wrap:anywhere!important}
+.admin-v5 #myAccountModal .profile-history-action{white-space:nowrap!important;align-self:center!important}
+
+/* Student profile upload is staged until the student edit form is saved. */
+.admin-v5 #studentEditModal .student-profile-upload-card{
+  display:grid!important;
+  grid-template-columns:64px minmax(0,1fr) auto!important;
+  gap:14px!important;
+  align-items:center!important;
+  min-width:0!important;
+  margin:0 0 18px!important;
+  padding:14px!important;
+  border:1px solid var(--ui-border,#d8e0ea)!important;
+  border-radius:10px!important;
+  background:var(--ui-surface-soft,#f8fafc)!important;
+}
+.admin-v5 #studentEditModal .student-profile-preview{width:64px!important;height:64px!important;border-radius:999px!important;overflow:hidden!important;display:grid!important;place-items:center!important;background:#63bea8!important;color:#fff!important;font-size:20px!important;font-weight:700!important}
+.admin-v5 #studentEditModal .student-profile-preview img{display:block!important;width:100%!important;height:100%!important;object-fit:cover!important;border-radius:inherit!important}
+.admin-v5 #studentEditModal .student-profile-copy{display:grid!important;gap:4px!important;min-width:0!important}
+.admin-v5 #studentEditModal .student-profile-copy strong{color:var(--ui-text,#101828)!important;font-size:14px!important}
+.admin-v5 #studentEditModal .student-profile-copy small{color:var(--ui-muted,#667085)!important;line-height:1.45!important}
+.admin-v5 #studentEditModal .student-profile-actions{display:grid!important;gap:6px!important;justify-items:end!important}
+.admin-v5 #studentEditModal .student-profile-file{position:relative!important;overflow:hidden!important;cursor:pointer!important;white-space:nowrap!important}
+.admin-v5 #studentEditModal .student-profile-file input{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+.admin-v5 #studentEditModal .student-profile-status{max-width:220px!important;color:var(--ui-muted,#667085)!important;font-size:11px!important;line-height:1.4!important;text-align:right!important}
+
+/* AI history and review queue */
+.issue3-filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.issue3-filter-bar .chip{text-decoration:none}
+.issue3-work-list{display:grid;gap:10px}
+.issue3-work-item{border:1px solid var(--ui-border-soft,#e6ebf2);border-radius:8px;background:var(--ui-surface,#fff);overflow:hidden}
+.issue3-work-summary{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(120px,.5fr) minmax(140px,.55fr) auto;gap:16px;align-items:center;padding:14px 16px}
+.issue3-work-summary strong{display:block;font-size:14px;color:var(--ui-text,#101828)}
+.issue3-work-summary small{display:block;margin-top:4px;color:var(--ui-muted,#667085);font-size:12px;line-height:1.45}
+.issue3-detail{padding:14px 16px;border-top:1px solid var(--ui-border-soft,#e6ebf2);background:var(--ui-surface-soft,#f8fafc)}
+.issue3-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.issue3-json{max-height:280px;margin:0;padding:12px;overflow:auto;border:1px solid var(--ui-border-soft,#e6ebf2);border-radius:8px;background:var(--ui-surface,#fff);color:var(--ui-text,#101828);font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.review-card{display:grid;gap:16px;padding:18px;border:1px solid var(--ui-border-soft,#e6ebf2);border-radius:8px;background:var(--ui-surface,#fff)}
+.review-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.review-card-head h3{margin:0 0 5px;font-size:16px}.review-card-head p{margin:0;color:var(--ui-muted,#667085);font-size:12px}
+.review-edit-grid{display:grid;grid-template-columns:minmax(180px,1.4fr) 150px 150px minmax(180px,1fr);gap:10px}
+.review-edit-grid label{display:grid;gap:6px;color:var(--ui-muted,#667085);font-size:12px;font-weight:700}
+.review-edit-grid input{width:100%;min-width:0}
+.review-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.alternative-result-panel{margin-top:12px}
+.kiosk-alternative-box{margin-top:14px;padding:16px 18px;border:2px solid #60a5fa;border-radius:18px;background:#eff6ff;color:#1d4ed8;text-align:left}
+.kiosk-alternative-box strong{display:block;margin-bottom:8px;font-size:1.05rem}.kiosk-alternative-box ul{margin:0;padding-left:20px}.kiosk-alternative-box li{margin:5px 0;line-height:1.45}
+
+body:not(.light-mode).admin-v5 .issue3-work-item,
+body:not(.light-mode).admin-v5 .review-card,
+body:not(.light-mode).admin-v5 .issue3-json{background:#172233!important;border-color:#334155!important;color:#eef4ff!important}
+body:not(.light-mode).admin-v5 .issue3-detail,
+body:not(.light-mode).admin-v5 .profile-history-item,
+body:not(.light-mode).admin-v5 #studentEditModal .student-profile-upload-card{background:#111827!important;border-color:#334155!important}
+
+@media(max-width:900px){
+  .admin-v5 .student-page .student-card{grid-template-columns:42px minmax(0,1fr)!important;grid-template-areas:"avatar main" "avatar side"!important}
+  .admin-v5 .student-page .student-card-side{justify-self:start!important;align-items:flex-start!important;text-align:left!important;max-width:100%!important;flex-direction:row!important;flex-wrap:wrap!important}
+  .issue3-work-summary{grid-template-columns:1fr 1fr}.review-edit-grid{grid-template-columns:1fr 1fr}
+  .admin-v5 #myAccountModal .profile-history-grid{grid-template-columns:1fr!important}
+}
+@media(max-width:640px){
+  .admin-v5 .modal-backdrop:not(.hidden){padding:12px!important}
+  .admin-v5 #myAccountModal>.modal,.admin-v5 #studentEditModal>.modal{width:calc(100vw - 24px)!important;max-height:calc(100vh - 24px)!important}
+  .admin-v5 #myAccountModal .profile-uploader.profile-upload-card{grid-template-columns:1fr!important}
+  .admin-v5 #myAccountModal .profile-upload-actions{justify-items:stretch!important}
+  .admin-v5 #myAccountModal .profile-history-item{grid-template-columns:48px minmax(0,1fr)!important}
+  .admin-v5 #myAccountModal .profile-history-action{grid-column:2!important;justify-self:start!important}
+  .admin-v5 #studentEditModal .student-profile-upload-card{grid-template-columns:54px minmax(0,1fr)!important}
+  .admin-v5 #studentEditModal .student-profile-actions{grid-column:1/-1!important;justify-items:stretch!important}
+  .admin-v5 #studentEditModal .student-profile-status{text-align:left!important;max-width:none!important}
+  .issue3-work-summary,.issue3-detail-grid,.review-edit-grid{grid-template-columns:1fr}
+}

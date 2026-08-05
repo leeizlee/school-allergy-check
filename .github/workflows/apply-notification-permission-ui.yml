@@ -1,0 +1,41 @@
+name: Apply notification permission UI
+
+on:
+  push:
+    branches:
+      - agent/notification-permission-state
+    paths:
+      - scripts/apply_notification_permission_ui.py
+      - .github/workflows/apply-notification-permission-ui.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/notification-permission-state
+          fetch-depth: 0
+
+      - name: Apply permission-state UI patch
+        run: python scripts/apply_notification_permission_ui.py
+
+      - name: Validate Python syntax
+        run: python -m py_compile admin/app_admin.py
+
+      - name: Commit patched application
+        run: |
+          if git diff --quiet -- admin/app_admin.py; then
+            echo "No application changes were needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add admin/app_admin.py
+          git commit -m "Handle notification permission states"
+          git push origin HEAD:agent/notification-permission-state

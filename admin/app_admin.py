@@ -1263,6 +1263,7 @@ def get_all_login_rows(include_trash=False):
             "email": safe_str(r.get("email")).strip(),
             "email_notifications": value_is_enabled(r.get("email_notifications")),
             "notification_time": safe_str(r.get("notification_time")).strip() or "07:30",
+            "email_last_sent_date": safe_str(r.get("email_last_sent_date")).strip(),
             "trash": trash,
         })
 
@@ -7665,10 +7666,28 @@ def api_notification_email_dispatch():
         logger.warning("알림 시간대 설정을 읽지 못해 Asia/Seoul을 사용해")
         local_now = datetime.now(ZoneInfo("Asia/Seoul"))
 
-    target_time = safe_str(data.get("time")).strip() or local_now.strftime("%H:%M")
+    requested_time = safe_str(data.get("time")).strip()
     date_value = compact_date_value(data.get("date")) or local_now.strftime("%Y%m%d")
-    if not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", target_time):
+    try:
+        window_minutes = max(1, min(int(data.get("window_minutes", 6)), 15))
+    except Exception:
+        window_minutes = 6
+
+    if requested_time and not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", requested_time):
         return jsonify({"ok": False, "error": "발송 시간 형식은 HH:MM이어야 해"}), 400
+
+    current_minutes = local_now.hour * 60 + local_now.minute
+
+    def account_is_due(account):
+        notification_time = safe_str(account.get("notification_time")).strip()
+        if not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", notification_time):
+            return False
+        if requested_time:
+            return notification_time == requested_time
+        hour, minute = [int(value) for value in notification_time.split(":", 1)]
+        scheduled_minutes = hour * 60 + minute
+        elapsed = current_minutes - scheduled_minutes
+        return 0 <= elapsed < window_minutes
 
     sent = []
     skipped = []
@@ -7678,7 +7697,10 @@ def api_notification_email_dispatch():
             continue
         if not account.get("email_notifications"):
             continue
-        if safe_str(account.get("notification_time")).strip() != target_time:
+        if not account_is_due(account):
+            continue
+        if safe_str(account.get("email_last_sent_date")).strip() == date_value:
+            skipped.append({"id": account.get("id"), "reason": "오늘 이미 발송됨"})
             continue
 
         recipient = safe_str(account.get("email")).strip()
@@ -7694,6 +7716,7 @@ def api_notification_email_dispatch():
         try:
             message = build_student_email_message(student, date_value)
             email_id = send_email(recipient, message)
+            update_cell_by_header_create(id_ws, account["row_index"], "email_last_sent_date", date_value)
             sent.append({
                 "id": account.get("id"),
                 "email": recipient,
@@ -7707,7 +7730,8 @@ def api_notification_email_dispatch():
     payload = {
         "ok": not failed,
         "date": date_value,
-        "time": target_time,
+        "time": requested_time or local_now.strftime("%H:%M"),
+        "window_minutes": window_minutes,
         "sent_count": len(sent),
         "skipped_count": len(skipped),
         "failed_count": len(failed),

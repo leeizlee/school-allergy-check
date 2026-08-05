@@ -1,0 +1,23 @@
+name: Dispatch meal email notifications
+
+on:
+  schedule:
+    - cron: "*/5 * * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request due email notifications
+        env:
+          DISPATCH_URL: ${{ secrets.NOTIFICATION_DISPATCH_URL }}
+          DISPATCH_TOKEN: ${{ secrets.EMAIL_DISPATCH_TOKEN }}
+        run: |
+          test -n "$DISPATCH_URL"
+          test -n "$DISPATCH_TOKEN"
+          curl --fail-with-body --silent --show-error \
+            --request POST "$DISPATCH_URL" \
+            --header "Authorization: Bearer $DISPATCH_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data '{"window_minutes":6}'

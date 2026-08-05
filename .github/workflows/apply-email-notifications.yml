@@ -6,6 +6,7 @@ on:
       - agent/notification-permission-state
     paths:
       - scripts/apply_email_notifications.py
+      - scripts/apply_email_dispatch_schedule.py
       - .github/workflows/apply-email-notifications.yml
   workflow_dispatch:
 
@@ -25,6 +26,9 @@ jobs:
       - name: Apply email notification patch
         run: python scripts/apply_email_notifications.py
 
+      - name: Apply scheduled dispatch patch
+        run: python scripts/apply_email_dispatch_schedule.py
+
       - name: Validate Python syntax
         run: python -m py_compile admin/app_admin.py services/email_service.py
 
@@ -37,5 +41,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add admin/app_admin.py
-          git commit -m "Add student email notifications"
+          git commit -m "Add scheduled student email notifications"
           git push origin HEAD:agent/notification-permission-state

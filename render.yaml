@@ -22,6 +22,16 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_REPLY_TO
+        sync: false
+      - key: EMAIL_DISPATCH_TOKEN
+        sync: false
+      - key: NOTIFICATION_TIMEZONE
+        value: Asia/Seoul
       - key: MENU_SHEET_ID
         sync: false
       - key: STUDENT_SHEET_ID

@@ -340,10 +340,17 @@
       const emailEnabled = Boolean(document.getElementById("emailNotifications")?.checked);
       const email = document.getElementById("notificationEmail");
       const time = document.getElementById("notificationTime");
-      const emailToggle = document.getElementById("emailNotifications");
-      if (emailToggle) emailToggle.disabled = !enabled;
       if (email) email.disabled = !enabled || !emailEnabled;
       if (time) time.disabled = !enabled;
+    }
+
+    function handleEmailNotificationToggle() {
+      const emailToggle = document.getElementById("emailNotifications");
+      const masterToggle = document.getElementById("notificationsEnabled");
+      if (emailToggle?.checked && masterToggle && !masterToggle.checked) {
+        masterToggle.checked = true;
+      }
+      updateNotificationFieldState();
     }
 
     async function loadNotificationSettings() {
@@ -526,7 +533,7 @@
       loadNotificationSettings();
       window.addEventListener("focus", updateBrowserPermissionState);
       document.getElementById("notificationsEnabled")?.addEventListener("change", updateNotificationFieldState);
-      document.getElementById("emailNotifications")?.addEventListener("change", updateNotificationFieldState);
+      document.getElementById("emailNotifications")?.addEventListener("change", handleEmailNotificationToggle);
       document.getElementById("studentAccountPanel")?.addEventListener("click", event => {
         if (event.target === event.currentTarget) closeStudentMyAccountModal();
       });

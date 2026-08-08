@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 from flask import jsonify, make_response, redirect, render_template_string, request, session, url_for
+from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from admin import app_admin as admin_app_module
@@ -30,6 +31,10 @@ def _int_env(name, default, min_value=1, max_value=None):
 
 
 app.config["MAX_CONTENT_LENGTH"] = _int_env("MAX_UPLOAD_MB", 16, min_value=1, max_value=64) * 1024 * 1024
+# AI 급식 검토 화면은 메뉴 한 행을 여러 multipart 필드로 전송한다.
+# Flask 3.1의 기본 1,000개 제한은 일반적인 월간 급식표도 막을 수 있어
+# 전체 요청 크기 제한은 유지하면서 폼 항목 수만 학교 규모에 맞게 늘린다.
+app.config["MAX_FORM_PARTS"] = _int_env("MAX_FORM_PARTS", 20000, min_value=1000, max_value=50000)
 if admin_app_module.IS_PRODUCTION:
     app.config["SESSION_COOKIE_NAME"] = os.getenv("SESSION_COOKIE_NAME", "__Host-school_allergy_session")
 app.config.setdefault("SESSION_REFRESH_EACH_REQUEST", False)
@@ -49,6 +54,14 @@ def _v5_admin_home():
 
 
 app.view_functions["home"] = _v5_admin_home
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def _v5_request_entity_too_large(_error):
+    message = "요청 데이터가 서버 허용 크기를 넘었어. 파일 크기나 한 번에 저장할 행 수를 줄여서 다시 시도해줘."
+    if request.path.startswith("/api/"):
+        return jsonify({"ok": False, "error": message}), 413
+    return message, 413
 
 
 def _v5_ai_tools_page():

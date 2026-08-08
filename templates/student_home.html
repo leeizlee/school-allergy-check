@@ -181,10 +181,10 @@
               <div class="push-state-compact__status">
                 <span id="browserPermissionBadge" class="permission-badge permission-badge--default">확인 중</span>
                 <strong id="browserPermissionTitle">권한 확인 중</strong>
+                <button class="button button--secondary push-permission-retry" id="requestNotificationPermission" type="button" onclick="requestBrowserNotificationPermission()">권한 허용</button>
               </div>
               <p id="browserPermissionDescription" class="sr-only">브라우저 알림 권한을 확인하고 있어요.</p>
               <div class="push-state-compact__actions">
-                <button class="button button--secondary" id="requestNotificationPermission" type="button" onclick="requestBrowserNotificationPermission()">권한 허용</button>
                 <button class="button button--secondary" id="testBrowserNotification" type="button" onclick="sendBrowserTestNotification()">테스트</button>
               </div>
             </div>
@@ -447,18 +447,20 @@
       badge.textContent = permission === "granted" ? "허용됨" : permission === "denied" ? "차단됨" : "선택 전";
       badge.className = `permission-badge permission-badge--${permission}`;
       if (permission === "granted") {
-        title.textContent = "허용됨";
+        title.textContent = "알림 가능";
         description.textContent = "테스트 알림으로 현재 기기에서 표시되는지 확인할 수 있어요.";
         requestButton.hidden = true;
         testButton.hidden = false;
       } else if (permission === "denied") {
-        title.textContent = "차단됨";
+        title.textContent = "권한 필요";
         description.textContent = "브라우저의 사이트 설정에서 알림 권한을 직접 허용해 주세요.";
-        requestButton.hidden = true;
+        requestButton.textContent = "재시도";
+        requestButton.hidden = false;
         testButton.hidden = true;
       } else {
-        title.textContent = "권한 선택 전";
+        title.textContent = "권한 필요";
         description.textContent = "허용 버튼을 누르면 브라우저가 권한을 요청합니다.";
+        requestButton.textContent = "권한 허용";
         requestButton.hidden = false;
         testButton.hidden = true;
       }
@@ -467,9 +469,16 @@
     async function requestBrowserNotificationPermission() {
       if (!("Notification" in window)) return;
       try {
-        await Notification.requestPermission();
+        if (Notification.permission === "default") {
+          await Notification.requestPermission();
+        } else if (Notification.permission === "denied") {
+          setNotificationMessage("사이트 설정에서 알림을 허용한 뒤 재시도를 눌러 주세요.", "error");
+        }
       } finally {
         updateBrowserPermissionState();
+        if (Notification.permission === "granted") {
+          setNotificationMessage("브라우저 알림 권한이 확인됐어요.", "success");
+        }
       }
     }
 
@@ -515,6 +524,7 @@
       renderMyAllergies(false);
       updateBrowserPermissionState();
       loadNotificationSettings();
+      window.addEventListener("focus", updateBrowserPermissionState);
       document.getElementById("notificationsEnabled")?.addEventListener("change", updateNotificationFieldState);
       document.getElementById("emailNotifications")?.addEventListener("change", updateNotificationFieldState);
       document.getElementById("studentAccountPanel")?.addEventListener("click", event => {

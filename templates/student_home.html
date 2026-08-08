@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f6fa">
+  <title>학생 홈 | AllergySafe</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='student/student_home_v54.css') }}">
+</head>
+<body>
+  {% set danger_count = menu_alerts | selectattr('has_conflict') | list | length %}
+
+  <header class="student-header">
+    <div class="student-header__inner">
+      <a class="brand" href="{{ url_for('student_home_page') }}" aria-label="AllergySafe 학생 홈">
+        <span class="brand__mark" aria-hidden="true">
+          <img src="{{ url_for('static', filename='logoimage_white.png') }}" alt="">
+        </span>
+        <span>
+          <strong>AllergySafe</strong>
+          <small>학생 급식 안전</small>
+        </span>
+      </a>
+
+      <div class="student-header__actions">
+        <span class="student-identity" title="{{ login_name }} · {{ login_id }}">
+          <span class="student-identity__avatar" aria-hidden="true">{{ login_name[:1] }}</span>
+          <span class="student-identity__copy"><strong>{{ login_name }}</strong><small>{{ login_id }}</small></span>
+        </span>
+        <button class="button button--quiet header-account" type="button" onclick="openStudentMyAccountModal()">내 정보</button>
+        <a class="button button--quiet" href="{{ url_for('logout') }}">로그아웃</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="student-page">
+    <section class="welcome" aria-labelledby="welcome-title">
+      <div class="welcome__copy">
+        <p class="eyebrow">오늘의 급식 안전 안내</p>
+        <h1 id="welcome-title">{{ login_name }} 학생, 오늘 급식을 확인해요.</h1>
+        <p>등록된 알레르기 정보와 오늘 메뉴를 비교한 결과입니다.</p>
+      </div>
+      <article class="safety-note safety-note--welcome">
+        <span class="safety-note__icon" aria-hidden="true">i</span>
+        <div><strong>배식 전 한 번 더 확인해 주세요.</strong><p>메뉴와 원재료는 변경될 수 있어요. 의심되는 음식은 선생님이나 급식 담당자에게 확인하세요.</p></div>
+      </article>
+    </section>
+
+    <section class="overview-grid" aria-label="오늘의 급식 안전 요약">
+      {% if not menu_alerts %}
+      <article class="status-card status-card--empty">
+        <div class="status-card__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 8v4m0 4h.01M10.3 3.8 2.5 17.3a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z"/></svg>
+        </div>
+        <div class="status-card__content">
+          <span class="status-card__label">오늘의 급식 안전 상태</span>
+          <h2>급식 정보 확인 전</h2>
+          <p>오늘 등록된 급식 메뉴가 없습니다. 메뉴가 등록되면 안전 여부를 바로 확인할 수 있어요.</p>
+        </div>
+        <span class="status-badge status-badge--neutral">메뉴 없음</span>
+      </article>
+      {% elif danger_count %}
+      <article class="status-card status-card--danger">
+        <div class="status-card__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 8v4m0 4h.01M10.3 3.8 2.5 17.3a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z"/></svg>
+        </div>
+        <div class="status-card__content">
+          <span class="status-card__label">오늘의 급식 안전 상태</span>
+          <h2>주의가 필요합니다</h2>
+          <p>내 알레르기와 겹치는 메뉴가 {{ danger_count }}개 있어요. 아래에서 위험 메뉴와 원인을 꼭 확인하세요.</p>
+        </div>
+        <span class="status-badge status-badge--danger">주의 {{ danger_count }}개</span>
+      </article>
+      {% else %}
+      <article class="status-card status-card--safe">
+        <div class="status-card__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M20 11.1V12a8 8 0 1 1-4.7-7.3M20 5l-9 9-3-3"/></svg>
+        </div>
+        <div class="status-card__content">
+          <span class="status-card__label">오늘의 급식 안전 상태</span>
+          <h2>등록 정보 기준 안전</h2>
+          <p>현재 등록된 알레르기와 겹치는 위험 메뉴가 없습니다.</p>
+        </div>
+        <span class="status-badge status-badge--safe">안전</span>
+      </article>
+      {% endif %}
+
+      <article class="profile-card">
+        <div class="profile-card__heading">
+          <div class="profile-card__avatar" aria-hidden="true">{{ login_name[:1] }}</div>
+          <div><span>학생 정보</span><h2>{{ login_name }} 학생</h2></div>
+        </div>
+        <dl class="profile-facts">
+          <div><dt>학번</dt><dd>{{ login_id }}</dd></div>
+          <div>
+            <dt>등록 알레르기</dt>
+            <dd class="profile-allergies">
+              {% if my_allergy_codes %}
+                {% for code in my_allergy_codes %}<span>{{ allergy_map.get(code, code) }}</span>{% endfor %}
+              {% else %}
+                <span class="no-allergy">등록 없음</span>
+              {% endif %}
+            </dd>
+          </div>
+        </dl>
+      </article>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel meal-panel" aria-labelledby="meal-title">
+        <div class="panel__header">
+          <div><p class="eyebrow">Today’s meal</p><h2 id="meal-title">오늘의 급식</h2><p>메뉴마다 내 알레르기와의 충돌 여부를 확인하세요.</p></div>
+          {% if menu_alerts %}<span class="count-badge">총 {{ menu_alerts | length }}개</span>{% endif %}
+        </div>
+
+        {% if menu_alerts %}
+        <div class="meal-list">
+          {% for item in menu_alerts %}
+          <section class="meal-item {% if item.has_conflict %}meal-item--danger{% elif item.is_alternative %}meal-item--alternative{% endif %}">
+            <div class="meal-item__state" aria-hidden="true">
+              {% if item.has_conflict %}
+              <svg viewBox="0 0 24 24"><path d="M12 8v4m0 4h.01M10.3 3.8 2.5 17.3a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z"/></svg>
+              {% elif item.is_alternative %}
+              <svg viewBox="0 0 24 24"><path d="M7 20h10M9 16v4m6-4v4M8 4h8l1 5a5 5 0 0 1-10 0l1-5Z"/></svg>
+              {% else %}
+              <svg viewBox="0 0 24 24"><path d="m7 12 3 3 7-7"/></svg>
+              {% endif %}
+            </div>
+            <div class="meal-item__body">
+              <div class="meal-item__title-row">
+                <h3>{{ item.menu_name or '-' }}</h3>
+                <div class="meal-item__badges">
+                  {% if item.is_alternative %}<span class="menu-badge menu-badge--alternative">대체 급식</span>{% endif %}
+                  {% if item.has_conflict %}<span class="menu-badge menu-badge--danger">주의</span>{% else %}<span class="menu-badge menu-badge--safe">안전</span>{% endif %}
+                </div>
+              </div>
+              {% if item.has_conflict %}
+              <p class="meal-item__reason"><strong>내 알레르기:</strong> {{ item.matched_names }}</p>
+              <p class="meal-item__meta">메뉴 표시 알레르기 · {{ item.allergy_names or '정보 없음' }}</p>
+              {% elif item.is_alternative %}
+              <p class="meal-item__reason meal-item__reason--alternative">학생에게 제공되는 대체 급식입니다.</p>
+              <p class="meal-item__meta">메뉴 표시 알레르기 · {{ item.allergy_names or '없음' }}</p>
+              {% else %}
+              <p class="meal-item__reason meal-item__reason--safe">내 알레르기와 겹치는 항목이 없습니다.</p>
+              <p class="meal-item__meta">메뉴 표시 알레르기 · {{ item.allergy_names or '없음' }}</p>
+              {% endif %}
+            </div>
+          </section>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <span class="empty-state__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M7 3v7a2 2 0 0 0 2 2h1V3M8.5 12v9M16 3v18m0-18c2 2 3 4 3 7h-3"/></svg>
+          </span>
+          <h3>오늘 등록된 급식 메뉴가 없습니다.</h3>
+          <p>메뉴가 등록된 뒤 다시 확인해 주세요.</p>
+        </div>
+        {% endif %}
+      </article>
+
+      <aside class="side-stack">
+        <article class="panel notification-panel notification-panel--sidebar" aria-labelledby="notification-title">
+          <div class="panel__header panel__header--compact">
+            <div><p class="eyebrow">Notification center</p><h2 id="notification-title">알림 설정</h2><p>급식 전에 개인별 안전 결과를 미리 받아보세요.</p></div>
+          </div>
+
+          <label class="switch-control switch-control--sidebar">
+            <span><strong>알림 사용</strong><small>개인 맞춤 사전 알림</small></span>
+            <input type="checkbox" id="notificationsEnabled">
+            <span class="switch" aria-hidden="true"></span>
+          </label>
+
+          <div class="notification-sidebar-fields">
+            <label class="check-control">
+              <input type="checkbox" id="emailNotifications">
+              <span><strong>이메일로 받기</strong><small>안전한 날에도 결과를 알려드려요.</small></span>
+            </label>
+            <div class="field">
+              <label for="notificationEmail">받을 이메일</label>
+              <input type="email" id="notificationEmail" autocomplete="email" placeholder="student@example.com">
+            </div>
+            <div class="field">
+              <label for="notificationTime">알림 받을 시간</label>
+              <input type="time" id="notificationTime" value="07:30">
+            </div>
+          </div>
+
+          <div class="notification-test-row notification-test-row--stacked">
+            <span id="gmailConnectionState" class="connection-state">Gmail 연결 상태 확인 중…</span>
+            <button class="button button--secondary" id="testEmailButton" type="button" onclick="sendTestEmail()">테스트 이메일</button>
+          </div>
+
+          <div class="browser-setting-compact">
+            <div class="permission-box permission-box--compact">
+              <span id="browserPermissionBadge" class="permission-badge permission-badge--default">확인 중</span>
+              <div><strong id="browserPermissionTitle">브라우저 권한을 확인하고 있어요.</strong><p id="browserPermissionDescription">잠시만 기다려 주세요.</p></div>
+            </div>
+            <div class="notification-test-row notification-test-row--browser">
+              <button class="button button--secondary" id="requestNotificationPermission" type="button" onclick="requestBrowserNotificationPermission()">알림 권한 허용</button>
+              <button class="button button--secondary" id="testBrowserNotification" type="button" onclick="sendBrowserTestNotification()">테스트 알림</button>
+            </div>
+          </div>
+
+          <div class="notification-actions notification-actions--sidebar">
+            <p id="notificationMessage" class="account-message" role="status" aria-live="polite"></p>
+            <button class="button button--primary button--full" id="saveNotificationSettings" type="button" onclick="saveNotificationSettings()">알림 설정 저장</button>
+          </div>
+        </article>
+
+      </aside>
+    </section>
+
+    <dialog class="account-dialog" id="studentAccountPanel" aria-labelledby="studentAccountTitle">
+      <div class="account-dialog__surface">
+        <header class="account-dialog__header">
+          <div><b id="studentAccountTitle">내 정보 관리</b><small>비밀번호와 알레르기 정보를 수정할 수 있어요.</small></div>
+          <button class="dialog-close" type="button" onclick="closeStudentMyAccountModal()" aria-label="내 정보 관리 닫기">×</button>
+        </header>
+        <div class="account-dialog__body">
+        <div class="account-fields">
+          <div class="field"><label>학번</label><span class="readonly-value">{{ login_id }}</span></div>
+          <div class="field"><label>이름</label><span class="readonly-value">{{ login_name }}</span></div>
+          <div class="field"><label for="studentMyPw">새 비밀번호</label><input type="password" id="studentMyPw" autocomplete="new-password" placeholder="변경할 때만 입력"></div>
+        </div>
+        <input type="hidden" id="studentMyId" value="{{ login_id }}">
+        <input type="hidden" id="studentMyName" value="{{ login_name }}">
+
+        <div class="allergy-editor">
+          <div class="field-label"><strong>내 알레르기 선택</strong><span>실제 진단 정보와 일치하도록 등록해 주세요.</span></div>
+          <div class="allergy-editor__controls">
+            <label class="sr-only" for="studentMyAllergySelect">추가할 알레르기</label>
+            <select id="studentMyAllergySelect">
+              <option value="">알레르기를 선택해 주세요</option>
+              <option value="none">등록된 알레르기 모두 지우기</option>
+              {% for code, name in allergy_map.items() %}<option value="{{ code }}">{{ code }}. {{ name }}</option>{% endfor %}
+            </select>
+            <button type="button" class="button button--secondary" onclick="addMyAllergy()">추가</button>
+          </div>
+          <div id="studentMyAllergyList" class="editable-chips" aria-live="polite"></div>
+        </div>
+
+        <div class="account-actions">
+          <p id="studentAccountMessage" class="account-message" role="status" aria-live="polite"></p>
+          <button id="studentAccountSave" class="button button--primary" type="button" onclick="saveStudentMyAccount()">변경사항 저장</button>
+        </div>
+        </div>
+      </div>
+    </dialog>
+  </main>
+
+  <footer class="student-footer"><img src="{{ url_for('static', filename='logoimage_white.png') }}" alt="MJ"><span>AllergySafe</span><p>알레르기 안전을 위한 급식 정보 서비스</p></footer>
+
+  <script>
+    const ALLERGY_MAP = {{ allergy_map | tojson }};
+    let myAllergies = {{ my_allergy_codes | tojson }};
+
+    function allergyName(code) {
+      return ALLERGY_MAP[code] ?? ALLERGY_MAP[String(code)] ?? `알 수 없음(${code})`;
+    }
+
+    function renderMyAllergies(isNone = false) {
+      const wrap = document.getElementById("studentMyAllergyList");
+      if (!wrap) return;
+      wrap.innerHTML = "";
+
+      if (isNone || myAllergies.length === 0) {
+        wrap.innerHTML = '<p class="editable-chips__empty">현재 등록된 알레르기가 없습니다.</p>';
+        return;
+      }
+
+      myAllergies.forEach(code => {
+        const tag = document.createElement("span");
+        tag.className = "editable-chip";
+        const label = document.createElement("span");
+        label.textContent = `${code}. ${allergyName(code)}`;
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.setAttribute("aria-label", `${allergyName(code)} 삭제`);
+        remove.textContent = "×";
+        remove.addEventListener("click", () => removeMyAllergy(code));
+        tag.append(label, remove);
+        wrap.appendChild(tag);
+      });
+    }
+
+    function openStudentMyAccountModal() {
+      const panel = document.getElementById("studentAccountPanel");
+      if (!panel) return;
+      if (!panel.open) panel.showModal();
+      window.setTimeout(() => document.getElementById("studentMyPw")?.focus(), 40);
+    }
+
+    function closeStudentMyAccountModal() {
+      const panel = document.getElementById("studentAccountPanel");
+      if (panel?.open) panel.close();
+    }
+
+    function addMyAllergy() {
+      const select = document.getElementById("studentMyAllergySelect");
+      const value = select?.value || "";
+      if (!value) return;
+      if (value === "none") {
+        myAllergies = [];
+      } else {
+        const num = Number(value);
+        if (num && !myAllergies.includes(num)) myAllergies.push(num);
+        myAllergies.sort((a, b) => a - b);
+      }
+      renderMyAllergies(false);
+      select.value = "";
+    }
+
+    function removeMyAllergy(code) {
+      myAllergies = myAllergies.filter(item => item !== code);
+      renderMyAllergies(false);
+    }
+
+    function setAccountMessage(message, kind = "") {
+      const target = document.getElementById("studentAccountMessage");
+      if (!target) return;
+      target.textContent = message;
+      target.className = `account-message${kind ? ` account-message--${kind}` : ""}`;
+    }
+
+    function setNotificationMessage(message, kind = "") {
+      const target = document.getElementById("notificationMessage");
+      if (!target) return;
+      target.textContent = message;
+      target.className = `account-message${kind ? ` account-message--${kind}` : ""}`;
+    }
+
+    function updateNotificationFieldState() {
+      const enabled = Boolean(document.getElementById("notificationsEnabled")?.checked);
+      const emailEnabled = Boolean(document.getElementById("emailNotifications")?.checked);
+      const email = document.getElementById("notificationEmail");
+      const time = document.getElementById("notificationTime");
+      const emailToggle = document.getElementById("emailNotifications");
+      if (emailToggle) emailToggle.disabled = !enabled;
+      if (email) email.disabled = !enabled || !emailEnabled;
+      if (time) time.disabled = !enabled;
+    }
+
+    async function loadNotificationSettings() {
+      try {
+        const response = await fetch("/api/student/notification-settings", {headers: {"Accept": "application/json"}});
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.error || "알림 설정을 불러오지 못했습니다.");
+        const settings = data.settings || {};
+        document.getElementById("notificationsEnabled").checked = Boolean(settings.notifications_enabled);
+        document.getElementById("emailNotifications").checked = Boolean(settings.email_notifications);
+        document.getElementById("notificationEmail").value = settings.email || "";
+        document.getElementById("notificationTime").value = settings.notification_time || "07:30";
+        const gmailState = document.getElementById("gmailConnectionState");
+        const emailButton = document.getElementById("testEmailButton");
+        if (settings.gmail_configured) {
+          gmailState.textContent = "Gmail API 연결 준비됨";
+          gmailState.className = "connection-state connection-state--ready";
+          emailButton.disabled = false;
+        } else {
+          gmailState.textContent = "서버 Gmail 연결 설정 필요";
+          gmailState.className = "connection-state connection-state--waiting";
+          emailButton.disabled = true;
+        }
+        updateNotificationFieldState();
+      } catch (error) {
+        setNotificationMessage(error.message || "알림 설정을 불러오지 못했습니다.", "error");
+      }
+    }
+
+    async function saveNotificationSettings() {
+      const button = document.getElementById("saveNotificationSettings");
+      const payload = {
+        notifications_enabled: Boolean(document.getElementById("notificationsEnabled")?.checked),
+        email_notifications: Boolean(document.getElementById("emailNotifications")?.checked),
+        email: document.getElementById("notificationEmail")?.value.trim() || "",
+        notification_time: document.getElementById("notificationTime")?.value || "07:30"
+      };
+      button.disabled = true;
+      button.textContent = "저장 중…";
+      setNotificationMessage("알림 설정을 저장하고 있어요.");
+      try {
+        const response = await fetch("/api/student/notification-settings", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.error || "알림 설정을 저장하지 못했습니다.");
+        setNotificationMessage("알림 설정이 저장됐어요.", "success");
+      } catch (error) {
+        setNotificationMessage(error.message || "알림 설정을 저장하지 못했습니다.", "error");
+      } finally {
+        button.disabled = false;
+        button.textContent = "알림 설정 저장";
+      }
+    }
+
+    async function sendTestEmail() {
+      const email = document.getElementById("notificationEmail")?.value.trim() || "";
+      const button = document.getElementById("testEmailButton");
+      if (!email) {
+        setNotificationMessage("테스트 이메일을 받을 주소를 먼저 입력해 주세요.", "error");
+        return;
+      }
+      button.disabled = true;
+      button.textContent = "발송 중…";
+      setNotificationMessage("오늘 급식 기준 테스트 이메일을 보내고 있어요.");
+      try {
+        const response = await fetch("/api/student/notifications/email-test", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({email})
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.error || "테스트 이메일을 보내지 못했습니다.");
+        setNotificationMessage("테스트 이메일을 보냈어요. 받은편지함을 확인해 주세요.", "success");
+      } catch (error) {
+        setNotificationMessage(error.message || "테스트 이메일을 보내지 못했습니다.", "error");
+      } finally {
+        button.disabled = false;
+        button.textContent = "테스트 이메일";
+      }
+    }
+
+    function updateBrowserPermissionState() {
+      const badge = document.getElementById("browserPermissionBadge");
+      const title = document.getElementById("browserPermissionTitle");
+      const description = document.getElementById("browserPermissionDescription");
+      const requestButton = document.getElementById("requestNotificationPermission");
+      const testButton = document.getElementById("testBrowserNotification");
+      if (!("Notification" in window)) {
+        badge.textContent = "미지원";
+        badge.className = "permission-badge permission-badge--denied";
+        title.textContent = "이 브라우저는 알림 기능을 지원하지 않아요.";
+        description.textContent = "다른 최신 브라우저에서 다시 확인해 주세요.";
+        requestButton.hidden = true;
+        testButton.hidden = true;
+        return;
+      }
+      const permission = Notification.permission;
+      badge.textContent = permission === "granted" ? "허용됨" : permission === "denied" ? "차단됨" : "선택 전";
+      badge.className = `permission-badge permission-badge--${permission}`;
+      if (permission === "granted") {
+        title.textContent = "브라우저 알림 권한이 허용되어 있어요.";
+        description.textContent = "테스트 알림으로 현재 기기에서 표시되는지 확인할 수 있어요.";
+        requestButton.hidden = true;
+        testButton.hidden = false;
+      } else if (permission === "denied") {
+        title.textContent = "브라우저 알림이 차단되어 있어요.";
+        description.textContent = "브라우저의 사이트 설정에서 알림 권한을 직접 허용해 주세요.";
+        requestButton.hidden = true;
+        testButton.hidden = true;
+      } else {
+        title.textContent = "브라우저 알림 권한을 선택해 주세요.";
+        description.textContent = "허용 버튼을 누르면 브라우저가 권한을 요청합니다.";
+        requestButton.hidden = false;
+        testButton.hidden = true;
+      }
+    }
+
+    async function requestBrowserNotificationPermission() {
+      if (!("Notification" in window)) return;
+      try {
+        await Notification.requestPermission();
+      } finally {
+        updateBrowserPermissionState();
+      }
+    }
+
+    function sendBrowserTestNotification() {
+      if (!("Notification" in window) || Notification.permission !== "granted") {
+        updateBrowserPermissionState();
+        return;
+      }
+      new Notification("AllergySafe 테스트 알림", {
+        body: "브라우저 알림이 정상적으로 표시되고 있어요.",
+        icon: "/static/favicon.svg"
+      });
+      setNotificationMessage("이 기기로 테스트 알림을 보냈어요.", "success");
+    }
+
+    async function saveStudentMyAccount() {
+      const saveButton = document.getElementById("studentAccountSave");
+      const newId = document.getElementById("studentMyId")?.value.trim() || "";
+      const newName = document.getElementById("studentMyName")?.value.trim() || "";
+      const newPw = document.getElementById("studentMyPw")?.value.trim() || "";
+      saveButton.disabled = true;
+      saveButton.textContent = "저장 중…";
+      setAccountMessage("변경사항을 저장하고 있어요.");
+
+      try {
+        const response = await fetch("/api/student/my-account/update", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({new_id: newId, new_name: newName, new_pw: newPw, allergy_codes: myAllergies})
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.error || "저장하지 못했습니다.");
+        setAccountMessage("내 정보가 저장됐어요.", "success");
+        window.setTimeout(() => window.location.reload(), 650);
+      } catch (error) {
+        setAccountMessage(error.message || "저장하지 못했습니다.", "error");
+        saveButton.disabled = false;
+        saveButton.textContent = "변경사항 저장";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      renderMyAllergies(false);
+      updateBrowserPermissionState();
+      loadNotificationSettings();
+      document.getElementById("notificationsEnabled")?.addEventListener("change", updateNotificationFieldState);
+      document.getElementById("emailNotifications")?.addEventListener("change", updateNotificationFieldState);
+      document.getElementById("studentAccountPanel")?.addEventListener("click", event => {
+        if (event.target === event.currentTarget) closeStudentMyAccountModal();
+      });
+    });
+  </script>
+</body>
+</html>

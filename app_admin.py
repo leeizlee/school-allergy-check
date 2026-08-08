@@ -109,6 +109,10 @@ _LOGIN_TEMPLATE_PATH = _PROJECT_ROOT / "templates" / "login.html"
 if _LOGIN_TEMPLATE_PATH.exists():
     admin_app_module.LOGIN_HTML = _LOGIN_TEMPLATE_PATH.read_text(encoding="utf-8")
 
+_STUDENT_HOME_TEMPLATE_PATH = _PROJECT_ROOT / "templates" / "student_home.html"
+if _STUDENT_HOME_TEMPLATE_PATH.exists():
+    admin_app_module.STUDENT_HTML = _STUDENT_HOME_TEMPLATE_PATH.read_text(encoding="utf-8")
+
 
 _LOGIN_RATE_LIMIT = _int_env("LOGIN_RATE_LIMIT_ATTEMPTS", 8, min_value=3, max_value=30)
 _LOGIN_RATE_WINDOW_SECONDS = _int_env("LOGIN_RATE_LIMIT_WINDOW_SECONDS", 600, min_value=60, max_value=3600)

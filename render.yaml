@@ -22,6 +22,18 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      - key: GMAIL_CLIENT_ID
+        sync: false
+      - key: GMAIL_CLIENT_SECRET
+        sync: false
+      - key: GMAIL_REFRESH_TOKEN
+        sync: false
+      - key: GMAIL_SENDER_EMAIL
+        sync: false
+      - key: EMAIL_DISPATCH_TOKEN
+        sync: false
+      - key: NOTIFICATION_TIMEZONE
+        value: Asia/Seoul
       - key: MENU_SHEET_ID
         sync: false
       - key: STUDENT_SHEET_ID
@@ -33,4 +45,16 @@ services:
       - key: PUBLIC_ADMIN_URL
         sync: false
       - key: RFID_DASHBOARD_URL
+        sync: false
+
+  - type: cron
+    name: school-allergy-email-notifications
+    runtime: python
+    schedule: "*/5 * * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scripts/dispatch_email_notifications.py
+    envVars:
+      - key: PUBLIC_ADMIN_URL
+        sync: false
+      - key: EMAIL_DISPATCH_TOKEN
         sync: false

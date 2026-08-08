@@ -326,7 +326,7 @@ def _menu_targets():
         if now - _MENU_TARGET_CACHE["ts"] < 6:
             return dict(_MENU_TARGET_CACHE["items"])
     try:
-        records = legacy.get_sheet_records_raw(legacy.menu_ws)
+        records = legacy._cached_get_sheet_records_raw(legacy.menu_ws)
         items = {}
         for row_index, raw in enumerate(records, start=2):
             row = legacy.clean_record_keys(raw)

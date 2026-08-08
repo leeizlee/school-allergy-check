@@ -1,7 +1,54 @@
 from __future__ import annotations
 
+import logging
 import threading
 import time
+
+
+logger = logging.getLogger(__name__)
+_RETRYABLE_READ_STATUS_CODES = {429, 500, 502, 503, 504}
+_RETRYABLE_READ_MARKERS = (
+    "quota",
+    "rate limit",
+    "read requests",
+    "resource_exhausted",
+    "too many requests",
+    "timeout",
+    "timed out",
+    "temporarily unavailable",
+)
+
+
+def _sheet_error_status(exc):
+    response = getattr(exc, "response", None)
+    status = getattr(response, "status_code", None)
+    try:
+        return int(status) if status is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _is_retryable_sheet_read_error(exc):
+    status = _sheet_error_status(exc)
+    if status in _RETRYABLE_READ_STATUS_CODES:
+        return True
+    text = f"{type(exc).__name__}: {exc}".lower()
+    return any(marker in text for marker in _RETRYABLE_READ_MARKERS)
+
+
+def _read_with_backoff(operation, *, max_attempts=4):
+    last_error = None
+    for attempt in range(max(1, int(max_attempts))):
+        try:
+            return operation()
+        except Exception as exc:
+            last_error = exc
+            if not _is_retryable_sheet_read_error(exc) or attempt + 1 >= max_attempts:
+                raise
+            delay = min(2 ** attempt, 8)
+            logger.warning("Google Sheets 읽기 제한으로 %.1f초 후 재시도 (%d/%d)", delay, attempt + 1, max_attempts)
+            time.sleep(delay)
+    raise last_error
 
 
 def safe_str(value) -> str:
@@ -33,7 +80,7 @@ def pick_first_value(record: dict, *keys, default=""):
 
 def get_sheet_records_raw(ws):
     """Read rows without trusting header normalization inside get_all_records()."""
-    values = ws.get_all_values()
+    values = _read_with_backoff(ws.get_all_values)
     if not values:
         return []
 
@@ -78,11 +125,15 @@ class _TTLCache:
 
 
 _cache = _TTLCache(ttl=8.0)
+_cache_load_lock = threading.Lock()
 
 
 def _sheet_cache_key(ws, kind: str = "records"):
     title = getattr(ws, "title", None) or "sheet"
-    return f"{kind}::{title}"
+    spreadsheet_id = getattr(ws, "spreadsheet_id", None)
+    if not spreadsheet_id:
+        spreadsheet_id = getattr(getattr(ws, "spreadsheet", None), "id", None)
+    return f"{kind}::{spreadsheet_id or 'unknown'}::{title}"
 
 
 def _cached_get_all_records(ws):
@@ -90,9 +141,13 @@ def _cached_get_all_records(ws):
     value, hit = _cache.get(key)
     if hit:
         return value
-    records = ws.get_all_records()
-    _cache.set(key, records)
-    return records
+    with _cache_load_lock:
+        value, hit = _cache.get(key)
+        if hit:
+            return value
+        records = _read_with_backoff(ws.get_all_records)
+        _cache.set(key, records)
+        return records
 
 
 def _cached_get_sheet_records_raw(ws):
@@ -100,9 +155,13 @@ def _cached_get_sheet_records_raw(ws):
     value, hit = _cache.get(key)
     if hit:
         return value
-    records = get_sheet_records_raw(ws)
-    _cache.set(key, records)
-    return records
+    with _cache_load_lock:
+        value, hit = _cache.get(key)
+        if hit:
+            return value
+        records = get_sheet_records_raw(ws)
+        _cache.set(key, records)
+        return records
 
 
 def _invalidate_sheet_cache(ws):
@@ -115,7 +174,7 @@ def normalize_trash(value):
 
 
 def find_header_col(ws, header_name):
-    headers = ws.row_values(1)
+    headers = _read_with_backoff(lambda: ws.row_values(1))
     for index, header in enumerate(headers, start=1):
         if str(header).strip() == header_name:
             return index
@@ -155,7 +214,7 @@ def get_record_value(record, *keys, default=""):
 
 
 def append_row_by_headers(ws, row_dict, default_value=""):
-    headers = [str(value).strip() for value in ws.row_values(1)]
+    headers = [str(value).strip() for value in _read_with_backoff(lambda: ws.row_values(1))]
     row = [row_dict.get(header, default_value) for header in headers]
     ws.append_row(row)
     _invalidate_sheet_cache(ws)
@@ -165,7 +224,7 @@ def append_rows_by_headers(ws, row_dicts, default_value=""):
     rows_to_add = list(row_dicts or [])
     if not rows_to_add:
         return
-    headers = [str(value).strip() for value in ws.row_values(1)]
+    headers = [str(value).strip() for value in _read_with_backoff(lambda: ws.row_values(1))]
     rows = [[row_dict.get(header, default_value) for header in headers] for row_dict in rows_to_add]
     if hasattr(ws, "append_rows"):
         ws.append_rows(rows)

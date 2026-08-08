@@ -1261,7 +1261,7 @@ def require_student():
 # =========================
 def get_all_menu_rows(include_trash=False):
     # food_menu는 get_all_records가 헤더/빈값을 이상하게 읽는 경우가 있어서 raw 파서 사용
-    records = get_sheet_records_raw(menu_ws)
+    records = _cached_get_sheet_records_raw(menu_ws)
     rows = []
 
     for idx, r in enumerate(records, start=2):

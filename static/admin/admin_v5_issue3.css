@@ -77,6 +77,7 @@ body:not(.light-mode).admin-v5 .modal-backdrop .modal-footer{background:#172233!
   padding:14px 16px!important;
   overflow:hidden!important;
 }
+.admin-v5 .student-page .student-card[hidden]{display:none!important}
 .admin-v5 .student-page .student-card>.student-checkbox-cell{position:absolute!important;left:8px!important;top:8px!important}
 .admin-v5 .student-page .student-card.selection-visible{padding-left:42px!important}
 .admin-v5 .student-page .student-card-avatar{grid-area:avatar!important;width:42px!important;height:42px!important}
